@@ -1,0 +1,11 @@
+Automaton static {
+    States := alive : black | dead : white
+
+    Neighborhood := (1,0) | (0,1) | (-1,0) | (0,-1) | (1,1) | (-1,-1) | (1,-1) | (-1,1)
+
+    Transition {
+        if cell == alive then alive else dead
+    }
+    
+    Default := dead
+}

@@ -1,0 +1,30 @@
+Automaton LangtonAnt {
+    States := White : white | Black : black |
+    antWL : red | antWR : yellow | antWU : blue |
+    antWD : lightblue | antBL : lightred | antBR : darkyellow | antBU : green | antBD : cyan
+
+    Neighborhood := (1,0) | (0,1) | (-1,0) | (0,-1)
+
+    Transition {
+        case {
+            cell == White : { case {
+                                nei(1) == antWU or nei(1) == antBD : { antWR }
+                                nei(2) == antWD or nei(2) == antBU : { antWL }
+                                nei(3) == antWR or nei(3) == antBL : { antWD }
+                                nei(4) == antWL or nei(4) == antBR : { antWU }
+                                otherwise : { White }
+                                  }
+                            }
+            cell == Black : { case {
+                                nei(1) == antWU or nei(1) == antBD : { antBR }
+                                nei(2) == antWD or nei(2) == antBU : { antBL }
+                                nei(3) == antWR or nei(3) == antBL : { antBD }
+                                nei(4) == antWL or nei(4) == antBR : { antBU }
+                                otherwise : { Black }
+                                  }
+                            }
+            otherwise : { if cell in [antWL, antWR, antWU, antWD] then Black else White }
+            }
+    }
+    Default := White
+}

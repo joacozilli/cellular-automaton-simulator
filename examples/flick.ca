@@ -1,0 +1,11 @@
+Automaton flick {
+    States := dead : red | alive : blue
+
+    Neighborhood := (1,0) | (0,1) | (-1,0) | (0,-1) | (1,1) | (-1,-1) | (1,-1) | (-1,1)
+
+    Transition {
+        if cell == dead then alive else dead
+    }
+
+    Default := dead
+}

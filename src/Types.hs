@@ -1,0 +1,87 @@
+{-# LANGUAGE FlexibleInstances #-}
+module Types where
+
+
+import           Data.Word (Word8,Word32)
+import           Graphics.Gloss.Data.Color
+import           Graphics.Gloss.Data.Bitmap
+import           Graphics.Gloss.Interface.Pure.Game
+
+import qualified Data.Vector as Vector
+import qualified Data.Vector.Storable as SVector
+import qualified Data.Map.Strict as Map
+
+-- rgba format of a color packed in a 32 bits word with order of bytes [r,g,b,a]
+type RGBA = Word32
+
+type Name = String
+type State = Name
+
+-- literal coordinate
+type Coord = (Int, Int)
+
+instance Num (Int,Int) where
+    (x1, y1) + (x2, y2) = (x1 + x2, y1 + y2)
+
+type Neighborhood = Vector.Vector Coord
+type States = Map.Map State RGBA
+
+-- cellular automata with its name, states, neighborhood, transition rule and default state
+data Automata = CA Name States Neighborhood Rule State  deriving Show
+
+data Rule = If (Exp Bool) Rule Rule | State (Exp State)  deriving Show
+
+data Exp a where
+    -- state expressions
+    Self :: Exp State
+    Neighbor :: Int -> Exp State
+    Lit :: String -> Exp State
+    LitColor :: RGBA -> Exp State
+
+    -- int expressions
+    Const :: Int -> Exp Int
+    Neighbors :: Exp State -> Exp Int
+    Sum :: Exp Int -> Exp Int -> Exp Int
+    Subs :: Exp Int -> Exp Int -> Exp Int
+    Prod :: Exp Int -> Exp Int -> Exp Int
+    Div :: Exp Int -> Exp Int -> Exp Int
+    Opp :: Exp Int -> Exp Int
+    
+    -- boolean expressions
+    BTrue :: Exp Bool
+    BFalse :: Exp Bool
+    And :: Exp Bool -> Exp Bool -> Exp Bool
+    Or :: Exp Bool -> Exp Bool -> Exp Bool
+    Not :: Exp Bool -> Exp Bool
+    Lt :: Exp Int -> Exp Int -> Exp Bool
+    Le :: Exp Int -> Exp Int -> Exp Bool
+    Gt :: Exp Int -> Exp Int -> Exp Bool
+    Ge :: Exp Int -> Exp Int -> Exp Bool
+    EqInt :: Exp Int -> Exp Int -> Exp Bool
+    NeqInt :: Exp Int -> Exp Int -> Exp Bool
+    EqState :: Exp State -> Exp State -> Exp Bool
+    NeqState :: Exp State -> Exp State -> Exp Bool
+    In :: Exp State -> [Exp State] -> Exp Bool
+
+deriving instance Show (Exp a)
+
+-- configuration of an instant
+type Conf = (SVector.Vector RGBA, -- unidimensional representation of grid
+                            Int,  -- number of rows
+                            Int)  -- number of columns
+
+-- type of frontier in simulation
+data Frontier = Default  -- neighbors outside grid range are considered of default color
+              | Toroidal -- grid is considered a toroid
+
+data World = World {automata :: Automata,
+                    conf :: Conf,
+                    instant:: Int,
+                    frontier :: Frontier,
+                    paused :: Bool,
+                    initial :: Bool,
+                    drawScale :: Float,
+                    speed :: Float
+                    }
+
+data Error = UndefState Name | NeighborOutOfRange Int | ZeroDiv

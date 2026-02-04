@@ -1,0 +1,18 @@
+Automaton myCA {
+    States := one : white
+    | two : black
+
+    Neighborhood := (1,0) |(0,1)
+
+    Transition {
+        case {
+            nei(1) == nei(4) : { pito }
+            nei(2) == cell : { two }
+            neighbors(cell) > 1 : { one }
+            otherwise : { esta }
+        }
+
+    }
+
+    Default := two
+}
