@@ -53,9 +53,9 @@ computeNeighbors :: Int            -- number of rows in grid
                  -> Frontier       -- type of frontier in simulation
                  -> LitNeighbors
 computeNeighbors n m v fr = Vector.generate (n*m) $ \k ->
-                                Vector.generate (Vector.length v) $ \i ->
+                                Vector.generate (Vector.length v) $ \l ->
                                     let cell = bidim k m
-                                        (i,j) = cell + (v Vector.! i)
+                                        (i,j) = cell + (v Vector.! l)
                                     in if validIndex (i,j) n m
                                         then unidim (i,j) m
                                         else case fr of
@@ -119,11 +119,11 @@ evalInt :: Exp Int -> M Int
 evalInt (Const n) = return n
 
 evalInt (Neighbors s) = do env <- ask
-                           let c = cell env
-                               config = envConf env
-                               neiVec = envNeighbors env Vector.! c
-                               color = cellColor config c (defaultColor env)
-                               g k nei = if cellColor config nei (defaultColor env) == color
+                           color <- evalState s
+                           let config = envConf env
+                               neiVec = envNeighbors env Vector.! cell env
+                               def = defaultColor env
+                               g k nei = if cellColor config nei def == color
                                             then k+1 else k
                             in return (Vector.foldl' g 0 neiVec)
                                      

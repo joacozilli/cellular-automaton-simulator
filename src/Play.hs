@@ -13,9 +13,6 @@ import                  Data.Word (Word8)
 import qualified        Data.Map.Strict as Map
 import                  Data.Maybe
 
--- show states's names and colors and generation
-legend :: States -> Int -> Picture
-legend = undefined
 
 -- draw a legend with state color boxes and labels below the grid, and generation info
 drawLegend :: World -> Picture
@@ -99,8 +96,8 @@ handleInput (EventKey (MouseButton LeftButton) Down _ position) w =
 -- zoom in/out with mouse wheel or arrows
 handleInput (EventKey (SpecialKey KeyUp) Down _ _) w = w {drawScale = 1 + drawScale w}
 handleInput (EventKey (MouseButton WheelUp) _ _ _) w = w {drawScale = 1 + drawScale w}
-handleInput (EventKey (MouseButton WheelDown) _ _ _) w = w {drawScale = max (-1 + drawScale w) 1}
-handleInput (EventKey (SpecialKey KeyDown) Down _ _) w = w {drawScale = max (-1 + drawScale w) 1}                                             
+handleInput (EventKey (MouseButton WheelDown) _ _ _) w = w {drawScale = max (drawScale w - 1) 2}
+handleInput (EventKey (SpecialKey KeyDown) Down _ _) w = w {drawScale = max (drawScale w - 1) 2}                                             
 handleInput _ w = w
 
 -- error world to display in case of error

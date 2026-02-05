@@ -9,7 +9,7 @@ Automaton GameOfLife {
             then
                 if neighbors(alive) == 3 or neighbors(alive) == 2 then alive else dead
             else
-                if neighbors(alive) > 3 or neighbors(alive) < 3 then dead else alive
+                if neighbors(alive) != 3 then dead else alive
     }
 
     Default := dead
