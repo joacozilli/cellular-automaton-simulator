@@ -23,6 +23,8 @@ type Coord = (Int, Int)
 instance Num (Int,Int) where
     (x1, y1) + (x2, y2) = (x1 + x2, y1 + y2)
 
+
+-- neighborhood as it is defined by automata
 type Neighborhood = Vector.Vector Coord
 type States = Map.Map State RGBA
 
@@ -70,12 +72,16 @@ type Conf = (SVector.Vector RGBA, -- unidimensional representation of grid
                             Int,  -- number of rows
                             Int)  -- number of columns
 
+-- literal neighborhood of each cell
+type LitNeighbors = Vector.Vector (Vector.Vector Int)
+
 -- type of frontier in simulation
 data Frontier = Default  -- neighbors outside grid range are considered of default color
               | Toroidal -- grid is considered a toroid
 
 data World = World {automata :: Automata,
                     conf :: Conf,
+                    neighbors :: LitNeighbors,
                     instant:: Int,
                     frontier :: Frontier,
                     paused :: Bool,

@@ -72,17 +72,13 @@ validIndex (i,j) n m = i >= 0 && i <= n-1
 
 
 -- return corresponding color of a cell in a configuration
-cellColor :: Conf      -- configuration
-          -> Coord     -- coordinate of cell
-          -> Frontier  -- type of frontier in simulation
-          -> RGBA      -- default color
+cellColor :: Conf    -- configuration
+          -> Int     -- cell index
+          -> RGBA    -- default color
           -> RGBA
-cellColor (vector,n,m) (i,j) fr def = if validIndex (i,j) n m
-                                        then vector SVector.! unidim (i,j) m
-                                        else case fr of
-                                            Default -> def
-                                            Toroidal -> let k = unidim (abs(n-i), abs(m-j)) m
-                                                        in vector SVector.! k
+cellColor (vector,_,_) idx def = if idx == -1
+                                    then def
+                                    else vector SVector.! idx
 
 
 

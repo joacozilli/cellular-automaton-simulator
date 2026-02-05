@@ -11,16 +11,14 @@ import           Control.Monad.Trans.Class (lift)
 
 import Control.Applicative()
 import Control.Monad (liftM, ap)
+   
 
-
--- Enviroment for the evaluation of transition rule in a cell
-type Env = (Coord,          -- coordinate of cell
-            Conf,           -- configuration 
-            Neighborhood,   -- neighborhood vector
-            Frontier,       -- type of frontier of simulation
-            RGBA            -- default color
-           )            
-         
+data Env = Env {cell :: Int,
+                envConf :: Conf,
+                envNeighbors :: LitNeighbors,
+                envFrontier :: Frontier,
+                defaultColor :: RGBA
+                  }     
 
 -- monad used in eval
 newtype M a = M { runM :: Env -> Either Error a}
@@ -46,18 +44,23 @@ throw err = M (\_ -> Left err)
 ask :: M Env
 ask = M Right
 
--- compute literal neighborhood of all cell. For each cell, the literal neighborhood
--- is a vector of indexes, considering -1 as out of range neighbor in a Default frontier
--- simulation.
-neighbors :: Int            -- number of rows in grid
-          -> Int            -- number of columns in grid
-          -> Neighborhood   -- neighborhood vector
-          -> Vector.Vector (Vector.Vector Int) 
-neighbors n m v = Vector.generate (n*m) $ \k ->
-                    Vector.generate (Vector.length v) $ \i ->
-                        let cell = bidim k m
-                            nei = cell + (v Vector.! i)
-                        in case 
+-- compute literal neighborhood of all cells. For each cell, the literal neighborhood
+-- is a vector of indexes to access neighbors directly, considering -1 as out of range
+-- neighbor in a Default frontier simulation.
+computeNeighbors :: Int            -- number of rows in grid
+                 -> Int            -- number of columns in grid
+                 -> Neighborhood   -- neighborhood vector
+                 -> Frontier       -- type of frontier in simulation
+                 -> LitNeighbors
+computeNeighbors n m v fr = Vector.generate (n*m) $ \k ->
+                                Vector.generate (Vector.length v) $ \i ->
+                                    let cell = bidim k m
+                                        (i,j) = cell + (v Vector.! i)
+                                    in if validIndex (i,j) n m
+                                        then unidim (i,j) m
+                                        else case fr of
+                                                Default -> -1
+                                                Toroidal -> unidim (abs(n-i), abs(m-j)) m
 
 
 
@@ -65,7 +68,7 @@ neighbors n m v = Vector.generate (n*m) $ \k ->
 -- and convert it to inmutable. Uses ExceptT monad transformer to combine ST and Either.
 globalTransition :: Conf                -- current configuration
                  -> Rule                -- converted transition rule AST
-                 -> Neighborhood        -- neighborhood vector
+                 -> LitNeighbors        -- literal neighborhood of each cell
                  -> Frontier            -- type of frontier in simulation
                  -> RGBA                -- default color
                  -> Either Error Conf
@@ -74,7 +77,13 @@ globalTransition c@(confVec,n,m) rule neighbors fr def =
                             let len = n*m
                             new <- lift $ MSVector.unsafeNew len
                             let loop i | i == len = return ()
-                                       | otherwise = do x <- ExceptT (pure (runM (eval rule) (bidim i m, c, neighbors, fr, def)))
+                                       | otherwise = do let env = Env { cell = i,
+                                                                        envConf = c,
+                                                                        envNeighbors = neighbors,
+                                                                        envFrontier = fr,
+                                                                        defaultColor = def
+                                                                       }
+                                                        x <- ExceptT (pure (runM (eval rule) env))
                                                         lift $ MSVector.unsafeWrite new i x
                                                         loop (i+1)
                             loop 0
@@ -95,12 +104,13 @@ eval (If cond r1 r2) = do b <- evalBool cond
      
 ------------------------------- evaluation of State, Int and Bool expressions --------------------------------
 evalState :: Exp State -> M RGBA
-evalState Self = do (cell,config,_,fr,def) <- ask
-                    return (cellColor config cell fr def)
+evalState Self = do env <- ask
+                    return (cellColor (envConf env) (cell env) (defaultColor env))
 
-evalState (Neighbor k) = do (cell,config,neighbors,fr,def) <- ask
-                            let (i,j) = cell + (neighbors Vector.! (k-1)) 
-                             in return (cellColor config (i,j) fr def)
+evalState (Neighbor k) = do env <- ask
+                            let i = cell env
+                                nei = envNeighbors env Vector.! i Vector.! (k-1)
+                            return (cellColor (envConf env) nei (defaultColor env))
                             
 evalState (LitColor rgba) = return rgba
 
@@ -108,12 +118,14 @@ evalState (LitColor rgba) = return rgba
 evalInt :: Exp Int -> M Int
 evalInt (Const n) = return n
 
-evalInt (Neighbors s) = do rgba <- evalState s
-                           (cell,config,neighbors,fr,def) <- ask
-                           let g k nei = let (i,j) = cell + nei
-                                             color = cellColor config (i,j) fr def
-                                          in if color == rgba then k+1 else k
-                            in return (Vector.foldl' g 0 neighbors)    
+evalInt (Neighbors s) = do env <- ask
+                           let c = cell env
+                               config = envConf env
+                               neiVec = envNeighbors env Vector.! c
+                               color = cellColor config c (defaultColor env)
+                               g k nei = if cellColor config nei (defaultColor env) == color
+                                            then k+1 else k
+                            in return (Vector.foldl' g 0 neiVec)
                                      
 evalInt (Sum a b) = do a' <- evalInt a
                        b' <- evalInt b

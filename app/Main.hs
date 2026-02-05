@@ -38,7 +38,7 @@ checkRule (CA name states neigh rule def) = let n = Vector.length neigh
                                             in case conversion states n rule of
                                                 Out (res,[]) -> do print res
                                                                    play disp white 20
-                                                                      (initWorld (CA name states neigh res def) Default 100 100)
+                                                                      (initWorld (CA name states neigh res def) Default 10 10)
                                                                       draw
                                                                       handleInput
                                                                       update

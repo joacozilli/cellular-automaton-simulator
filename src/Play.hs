@@ -74,7 +74,7 @@ update :: Float -> World -> World
 update _ w = if paused w
               then w
               else let (CA _ sm vn r def) = automata w
-                    in case globalTransition (conf w) r vn (frontier w) (fromJust $ Map.lookup def sm) of
+                    in case globalTransition (conf w) r (neighbors w) (frontier w) (fromJust $ Map.lookup def sm) of
                         Left err -> errorWorld
                         Right newconf -> w {conf = newconf, instant = instant w + 1, initial = False}
 
@@ -108,18 +108,8 @@ errorWorld :: World
 errorWorld = undefined
 
 f :: Int -> RGBA
--- f 550 = colorToRGBA black
--- f 551 = colorToRGBA black
--- f 552 = colorToRGBA black
--- f 451 = colorToRGBA black
--- f 453 = colorToRGBA black
--- f 454 = colorToRGBA black
--- f 455 = colorToRGBA black
 f _ = colorToRGBA white
 
-
-g :: Int -> RGBA
-g j = if even j then colorToRGBA red else colorToRGBA blue
 
 initConf :: Int -> Int -> Conf
 initConf n m = let c = [f k | k <- [0..(n*m)-1]]
@@ -127,9 +117,16 @@ initConf n m = let c = [f k | k <- [0..(n*m)-1]]
 
 -- initial world prior to starting simulation
 initWorld :: Automata -> Frontier -> Int -> Int -> World
-initWorld ca fr n m = World {automata = ca, conf = initConf n m, instant = 0,
-                             frontier = fr, paused = True, initial = True,
-                             drawScale = 5, speed = 1.0}
+initWorld ca@(CA _ _ nv _ _) fr n m = World {automata = ca,
+                                            conf = initConf n m,
+                                            neighbors = computeNeighbors n m nv fr,
+                                            instant = 0,
+                                            frontier = fr,
+                                            paused = True,
+                                            initial = True,
+                                            drawScale = 5,
+                                            speed = 1.0
+                                            }
 
 
 
