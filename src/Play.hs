@@ -37,12 +37,12 @@ drawLegend w =
   in Pictures (statePics ++ [genPic])
 
 gridLines :: Int -> Int -> Float -> [Picture]
-gridLines n m scale = verticalLines ++ horizontalLines
+gridLines n m s = verticalLines ++ horizontalLines
   where
-    w = fromIntegral n * scale
-    h = fromIntegral m * scale
-    verticalLines = [color black $ line [(x, -h / 2), (x,  h / 2)] | i <- [0 .. n], let x = -w / 2 + fromIntegral i * scale]
-    horizontalLines = [color black $ line [(-w / 2, y), ( w / 2, y)] | j <- [0 .. m], let y = -h / 2 + fromIntegral j * scale]
+    w = fromIntegral n * s
+    h = fromIntegral m * s
+    verticalLines = [color black $ line [(x, -h / 2), (x,  h / 2)] | i <- [0 .. n], let x = -w / 2 + fromIntegral i * s]
+    horizontalLines = [color black $ line [(-w / 2, y), ( w / 2, y)] | j <- [0 .. m], let y = -h / 2 + fromIntegral j * s]
 
 
 -- convert vector of RGBA to a bytestring in O(1)
@@ -57,7 +57,7 @@ drawAux w = let (config,n,m) = conf w in bitmapOfByteString n m (BitmapFormat To
 
 -- generate picture from a world and scale it to cell size
 draw :: World -> Picture
-draw w = if initial w
+draw w = if initial w || True
             then let (_,n,m) = conf w
                      s = drawScale w
                      grid = Pictures (scale s s (drawAux w) : gridLines n m s)
@@ -74,6 +74,7 @@ update _ w = if paused w
                     in case globalTransition (conf w) r (neighbors w) (frontier w) (fromJust $ Map.lookup def sm) of
                         Left err -> errorWorld
                         Right newconf -> w {conf = newconf, instant = instant w + 1, initial = False}
+
 
 
 handleInput :: Event -> World -> World

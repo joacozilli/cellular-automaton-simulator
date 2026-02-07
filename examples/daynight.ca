@@ -1,0 +1,22 @@
+Automaton daynight {
+
+    States := alive : black | dead : white
+
+    Neighborhood := (1,0) | (0,1) | (-1,0) | (0,-1) | (1,1) | (-1,-1) | (1,-1) | (-1,1)
+
+
+    Transition {
+
+        if cell == dead
+            then
+                if neighbors(alive) == 3 or neighbors(alive) == 6
+                or neighbors(alive) == 7 or neighbors(alive) == 8
+                    then alive else dead
+            else
+                if neighbors(alive) == 3 or neighbors(alive) == 4
+                or neighbors(alive) == 6 or neighbors(alive) == 7 or neighbors(alive) == 8
+                    then alive else dead
+    }
+
+    Default := dead
+}

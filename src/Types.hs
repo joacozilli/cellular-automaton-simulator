@@ -31,7 +31,7 @@ type States = Map.Map State RGBA
 -- cellular automata with its name, states, neighborhood, transition rule and default state
 data Automata = CA Name States Neighborhood Rule State  deriving Show
 
-data Rule = If (Exp Bool) Rule Rule | State (Exp State)  deriving Show
+data Rule = If (Exp Bool) Rule Rule | State (Exp State) | Let String (Exp Int) Rule deriving Show
 
 data Exp a where
     -- state expressions
@@ -41,6 +41,7 @@ data Exp a where
     LitColor :: RGBA -> Exp State
 
     -- int expressions
+    Var :: String -> Exp Int
     Const :: Int -> Exp Int
     Neighbors :: Exp State -> Exp Int
     Sum :: Exp Int -> Exp Int -> Exp Int
@@ -49,6 +50,7 @@ data Exp a where
     Div :: Exp Int -> Exp Int -> Exp Int
     Opp :: Exp Int -> Exp Int
     
+
     -- boolean expressions
     BTrue :: Exp Bool
     BFalse :: Exp Bool

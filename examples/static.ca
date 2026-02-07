@@ -4,7 +4,7 @@ Automaton static {
     Neighborhood := (1,0) | (0,1) | (-1,0) | (0,-1) | (1,1) | (-1,-1) | (1,-1) | (-1,1)
 
     Transition {
-        if cell == alive then alive else dead
+        cell
     }
     
     Default := dead

@@ -37,8 +37,8 @@ checkRule :: Automata -> IO ()
 checkRule (CA name states neigh rule def) = let n = Vector.length neigh
                                             in case conversion states n rule of
                                                 Out (res,[]) -> do print res
-                                                                   play disp white 10
-                                                                      (initWorld (CA name states neigh res def) Default 700 700)
+                                                                   play disp white 20
+                                                                      (initWorld (CA name states neigh res def) Default 200 200)
                                                                       draw
                                                                       handleInput
                                                                       update

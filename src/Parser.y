@@ -42,6 +42,8 @@ import qualified Data.Vector as Vector
 '-'                 { Tsubs }
 '*'                 { Tprod }
 '/'                 { Tdiv }
+'let'               { Tlet }
+'='                 { Tassign }
 'and'               { Tand }
 'or'                { Tor }
 'not'               { Tnot }
@@ -78,6 +80,7 @@ import qualified Data.Vector as Vector
 IDENT               { Tid $$ }
 NAT                 { Tnat $$ }
 
+%nonassoc 'let'
 %left 'or'
 %left 'and'
 %nonassoc 'not'
@@ -115,6 +118,7 @@ Rule         :: { Rule }
              : StateExp                                                { State $1 }
              | 'if' BoolExp 'then' Rule 'else' Rule                    { If $2 $4 $6 }
              | 'case' '{' Cond '}'                                     { $3 }
+             | 'let' IDENT '=' IntExp 'in' Rule                        { Let $2 $4 $6 }
 
 Cond         : 'otherwise' ':' '{' Rule '}'                            { $4 }
              | BoolExp ':' '{' Rule '}' Cond                           { If $1 $4 $6 }
@@ -128,6 +132,7 @@ StateExp     :: { Exp State }
 
 IntExp       :: { Exp Int }
              : NAT                                                     { Const $1 }
+             | IDENT                                                   { Var $1 }
              | 'neighbors' '(' StateExp ')'                            { Neighbors $3 }
              | IntExp '+' IntExp                                       { Sum $1 $3 }
              | IntExp '-' IntExp                                       { Subs $1 $3 }
@@ -226,6 +231,7 @@ data Token = TCA
              | TDefault
              | Tcell | Tnei
              | Tsum | Tsubs | Tprod | Tdiv
+             | Tlet | Tassign
              | Tand | Tor | Tnot | Tin
              | TFalse | TTrue
              | Teq | Tneq | Tle | Tlesser | Tge | Tgreater
@@ -269,7 +275,8 @@ lexer cont s = case s of
                                                      , ('*', Tprod)
                                                      , ('/', Tdiv)
                                                      , ('<', Tlesser)
-                                                     , ('>', Tgreater)]
+                                                     , ('>', Tgreater)
+                                                     , ('=', Tassign) ]
 
                 where lexNat s = let (n,rest) = span isDigit s
                                   in \c -> cont (Tnat (read n)) rest (c + length n)
@@ -289,6 +296,7 @@ lexer cont s = case s of
                                                                 , ("Default", TDefault)
                                                                 , ("cell", Tcell)
                                                                 , ("nei", Tnei)
+                                                                , ("let", Tlet)
                                                                 , ("and", Tand)
                                                                 , ("or", Tor)
                                                                 , ("not", Tnot)
