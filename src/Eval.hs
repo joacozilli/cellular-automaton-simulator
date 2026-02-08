@@ -5,6 +5,7 @@ import           Utils
 import qualified Data.Vector as Vector
 import qualified Data.Vector.Storable as SVector (fromList, unsafeFreeze)
 import qualified Data.Vector.Storable.Mutable as MSVector
+import qualified Data.Map.Strict as Map (empty)
 import           Control.Monad.ST
 import           Control.Monad.Except
 import           Control.Monad.Trans.Class (lift)
@@ -12,13 +13,6 @@ import           Control.Monad.Trans.Class (lift)
 import Control.Applicative()
 import Control.Monad (liftM, ap)
    
-
-data Env = Env {cell :: Int,
-                envConf :: Conf,
-                envNeighbors :: LitNeighbors,
-                envFrontier :: Frontier,
-                defaultColor :: RGBA
-                  }     
 
 -- monad used in eval
 newtype M a = M { runM :: Env -> Either Error a}
@@ -60,38 +54,36 @@ computeNeighbors n m v fr = Vector.generate (n*m) $ \k ->
                                         then unidim (i,j) m
                                         else case fr of
                                                 Default -> -1
-                                                Toroidal -> unidim (abs(n-i), abs(m-j)) m
+                                                Toroidal -> unidim (toroidCell (i,j) n m) m
 
 
 
 -- global transition to go from one configuration to the next. Create mutable vector
 -- and convert it to inmutable. Uses ExceptT monad transformer to combine ST and Either.
 globalTransition :: Conf                -- current configuration
-                 -> Rule                -- converted transition rule AST
+                 -> (Env -> RGBA)       -- converted transition rule
                  -> LitNeighbors        -- literal neighborhood of each cell
                  -> Frontier            -- type of frontier in simulation
                  -> RGBA                -- default color
-                 -> Either Error Conf
-globalTransition c@(confVec,n,m) rule neighbors fr def =
-    let newconf =  runST $ runExceptT $ do
-                            let len = n*m
-                            new <- lift $ MSVector.unsafeNew len
-                            let loop i | i == len = return ()
-                                       | otherwise = do let env = Env { cell = i,
-                                                                        envConf = c,
-                                                                        envNeighbors = neighbors,
-                                                                        envFrontier = fr,
-                                                                        defaultColor = def
-                                                                       }
-                                                        x <- ExceptT (pure (runM (eval rule) env))
-                                                        lift $ MSVector.unsafeWrite new i x
-                                                        loop (i+1)
-                            loop 0
-                            lift $ SVector.unsafeFreeze new
-    in case newconf of
-        Left err -> Left err
-        Right newvec -> Right (newvec,n,m)
-
+                 -> Conf
+globalTransition c@(confVec,n,m) func neighbors fr def =
+    let newconf =  runST $ do
+                        let len = n*m
+                        new <- MSVector.unsafeNew len
+                        let loop i | i == len = return ()
+                                    | otherwise = do let env = Env { cell = i,
+                                                                    envConf = c,
+                                                                    envNeighbors = neighbors,
+                                                                    envVars = Map.empty,
+                                                                    envFrontier = fr,
+                                                                    defaultColor = def
+                                                                    }
+                                                         x = func env
+                                                     MSVector.unsafeWrite new i x
+                                                     loop (i+1)
+                        loop 0
+                        SVector.unsafeFreeze new
+    in (newconf,n,m)
 
 
 -- evaluation of rule on an enviroment
@@ -112,7 +104,7 @@ evalState (Neighbor k) = do env <- ask
                                 nei = envNeighbors env Vector.! i Vector.! (k-1)
                             return (cellColor (envConf env) nei (defaultColor env))
                             
-evalState (LitColor rgba) = return rgba
+--evalState (LitColor rgba) = return rgba
 
 
 evalInt :: Exp Int -> M Int
@@ -126,23 +118,6 @@ evalInt (Neighbors s) = do env <- ask
                                g k nei = if cellColor config nei def == color
                                             then k+1 else k
                             in return (Vector.foldl' g 0 neiVec)
-                                     
-evalInt (Sum a b) = do a' <- evalInt a
-                       b' <- evalInt b
-                       return (a' + b')
-evalInt (Subs a b) = do a' <- evalInt a
-                        b' <- evalInt b
-                        return (a' - b')
-
-evalInt (Prod a b) = do a' <- evalInt a
-                        b' <- evalInt b
-                        return (a' * b')
-
-evalInt (Div a b) = do a' <- evalInt a
-                       b' <- evalInt b
-                       if b' == 0
-                        then throw ZeroDiv
-                        else return (a' `div` b')
 
 evalInt (Opp a) = do a' <- evalInt a
                      return (-a')

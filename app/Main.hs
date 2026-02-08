@@ -32,19 +32,18 @@ main = do args <- getArgs
 printError :: Error -> IO ()
 printError (UndefState name) = putStrLn ("  - undefined state \""++name++"\" referenced in transition rule")
 printError (NeighborOutOfRange k) = putStrLn ("  - trying to access invalid/out of range neighbor with nei("++show k++") in transition rule")
+printError (UndefVar name) = putStrLn ("  - undefined variable \""++name++"\" referenced in transition rule")
 
 checkRule :: Automata -> IO ()
 checkRule (CA name states neigh rule def) = let n = Vector.length neigh
-                                            in case conversion states n rule of
-                                                Out (res,[]) -> do print res
-                                                                   play disp white 20
-                                                                      (initWorld (CA name states neigh res def) Default 200 200)
+                                            in case conversion states n Map.empty rule of
+                                                Out (res,[]) -> do play disp white 20
+                                                                      (initWorld (CA name states neigh rule def) Toroidal res 500 500)
                                                                       draw
                                                                       handleInput
                                                                       update
                                                 Out (res,errors) -> do putStrLn "[ERROR] following errors where detected in automata definition:"
                                                                        aux errors
-                                                                       print res
                                           where
                                             aux [e] = printError e
                                             aux (e:es) = do printError e

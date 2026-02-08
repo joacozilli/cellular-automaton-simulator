@@ -1,13 +1,20 @@
 module Conv where
 
-import Types
+{-# HLINT ingore "use const" #-}
+
+import           Types
+import           Utils
 import qualified Data.Map.Strict as Map
+import qualified Data.Vector as Vector
+import qualified Data.Vector.Storable as SVector
+import           Data.Maybe (fromJust)
 
-import Control.Applicative()
-import Control.Monad (liftM, ap)
+import           Control.Applicative()
+import           Control.Monad (liftM, ap)
 
 
--- monad to be used in conversion.
+-- monad to be used in conversion; it allows to keep track of all
+-- encountered errors troughout the conversion.
 newtype Output e a = Out (a,e)
 
 instance Monoid e => Functor (Output e) where
@@ -21,102 +28,216 @@ instance Monoid e => Monad (Output e) where
     return = pure
     Out (x,e1) >>= f = let Out (y,e2) = f x in Out (y, mappend e1 e2)
 
--- write an error to the monad
+-- write an error
 write :: e -> Output e ()
 write err = Out ((),err)
 
-{-
-Convert all occasions of Lit STATE_NAME to LitColor STATE_COLOR and check
-for undefined state and undefined neighbor errors. The convertion is successful
-if no errors are encountered.
--}
+
+-- Convert rule AST to a pure haskell function of type Env -> RGBA. Also check for
+-- undefined state, neighbor and variable errors. The conversion is successful if
+-- no errors are encountered.
 conversion :: States                -- map of states
             -> Int                  -- size of neighborhood
+            -> Vars                 -- map of variables
             -> Rule                 -- transition rule
-            -> Output [Error] Rule  -- return all encountered errors or converted transition rule
-conversion sm n (If b r1 r2) = do b' <- convBool sm n b
-                                  r1' <- conversion sm n r1
-                                  r2' <- conversion sm n r2
-                                  return (If b' r1' r2')
-conversion sm n (State s) = do s' <- convState sm n s
-                               return (State s')
+            -> Output [Error] (Env -> RGBA)
+conversion sm n _ (State s) = convState sm n s
+
+conversion sm n vm (If b r1 r2) = do prop <- convBool sm n vm b
+                                     f1 <- conversion sm n vm r1
+                                     f2 <- conversion sm n vm r2
+                                     return (\env -> if prop env then f1 env else f2 env)
+
+conversion sm n vm (Let x exp rule) = do let vm' = Map.insert x 0 vm
+                                         fexp <- convInt sm n vm exp
+                                         frule <- conversion sm n vm' rule
+                                         return (\env -> let n = fexp env
+                                                             env' = env {envVars = Map.insert x n (envVars env)}
+                                                           in frule env')
 
 
 ----------------------------- auxiliar functions for conversion -----------------------------------------
-convState :: States -> Int -> Exp State -> Output [Error] (Exp State)
+
+convState :: States -> Int -> Exp State -> Output [Error] (Env -> RGBA)
 convState sm _ (Lit name) = case Map.lookup name sm of
-                                Just rgba -> return (LitColor rgba)
-                                Nothing -> write [UndefState name] >> return (Lit name)
-convState _ n t@(Neighbor k) = if k <= n then return t
-                                         else write [NeighborOutOfRange k] >> return t
-convState _ _ s = return s
+                                Just rgba -> return (\_ -> rgba)
+                                Nothing -> write [UndefState name] >> return (\_ -> 0)
 
-convInt :: States -> Int -> Exp Int -> Output [Error] (Exp Int)
-convInt sm n (Const k) = return (Const k)
-convInt sm n (Neighbors state) = do state' <- convState sm n state
-                                    return (Neighbors state')
-convInt sm n (Sum a b) = do a' <- convInt sm n a
-                            b' <- convInt sm n b
-                            return (Sum a' b')
-convInt sm n (Subs a b) = do a' <- convInt sm n a
-                             b' <- convInt sm n b
-                             return (Subs a' b')
-convInt sm n (Prod a b) = do a' <- convInt sm n a
-                             b' <- convInt sm n b
-                             return (Prod a' b')
-convInt sm n (Div a b) = do a' <- convInt sm n a
-                            b' <- convInt sm n b
-                            return (Div a' b')
-convInt sm n (Opp a) = do a' <- convInt sm n a
-                          return (Opp a')
+convState _ n t@(Neighbor k) = if k <= n
+                                    then return (\env ->
+                                            let i = cell env
+                                                nei = envNeighbors env Vector.! i Vector.! (k-1)
+                                            in cellColor (envConf env) nei (defaultColor env))
+                                    else write [NeighborOutOfRange k] >> return (\_ -> 0)
 
-convBool :: States -> Int -> Exp Bool -> Output [Error] (Exp Bool)
-convBool sm n (And a b) = do a' <- convBool sm n a
-                             b' <- convBool sm n b
-                             return (And a' b')
+convState _ _ self = return (\env -> cellColor (envConf env) (cell env) (defaultColor env))
 
-convBool sm n (Or a b) = do a' <- convBool sm n a
-                            b' <- convBool sm n b
-                            return (Or a' b')
 
-convBool sm n (Lt a b) = do a' <- convInt sm n a
-                            b' <- convInt sm n b
-                            return (Lt a' b')
+convInt :: States -> Int -> Vars -> Exp Int -> Output [Error] (Env -> Int)
+convInt _ _ _ (Const n) = return (\_ -> n)
 
-convBool sm n (Le a b) = do a' <- convInt sm n a
-                            b' <- convInt sm n b
-                            return (Le a' b')
+convInt _ _ vm (Var x) = case Map.lookup x vm of
+                            Just _ -> return (\env -> fromJust $ Map.lookup x (envVars env) )
+                            Nothing ->  write [UndefVar x] >> return (\_ -> 0)
 
-convBool sm n (Gt a b) = do a' <- convInt sm n a
-                            b' <- convInt sm n b
-                            return (Gt a' b')
+convInt sm n _ (Neighbors state) = do f <- convState sm n state
+                                      return (\env -> 
+                                                let color = f env
+                                                    config = envConf env
+                                                    neiVec = envNeighbors env Vector.! cell env
+                                                    def = defaultColor env
+                                                    g k nei = if cellColor config nei def == color
+                                                                then k+1 else k
+                                                in Vector.foldl' g 0 neiVec
+                                             )
+convInt sm n vm (Opp a) = do f <- convInt sm n vm a
+                             return (\env -> -(f env))
 
-convBool sm n (Ge a b) = do a' <- convInt sm n a
-                            b' <- convInt sm n b
-                            return (Ge a' b')
 
-convBool sm n (EqInt a b) = do a' <- convInt sm n a
-                               b' <- convInt sm n b
-                               return (EqInt a' b')
+convBool :: States -> Int -> Vars -> Exp Bool -> Output [Error] (Env -> Bool)
+convBool sm n vm (And a b) = do fa <- convBool sm n vm a
+                                fb <- convBool sm n vm b
+                                return (\env -> fa env && fb env)
+convBool sm n vm (Or a b) = do fa <- convBool sm n vm a
+                               fb <- convBool sm n vm b
+                               return (\env -> fa env || fb env)
 
-convBool sm n (NeqInt a b) = do a' <- convInt sm n a
-                                b' <- convInt sm n b
-                                return (NeqInt a' b')
+convBool sm n vm (Lt a b) = do fa <- convInt sm n vm a
+                               fb <- convInt sm n vm b
+                               return (\env -> fa env < fb env)
 
-convBool sm n (EqState a b) = do a' <- convState sm n a
-                                 b' <- convState sm n b
-                                 return (EqState a' b')
+convBool sm n vm (Le a b) = do fa <- convInt sm n vm a
+                               fb <- convInt sm n vm b
+                               return (\env -> fa env <= fb env)
 
-convBool sm n (NeqState a b) = do a' <- convState sm n a
-                                  b' <- convState sm n b
-                                  return (NeqState a' b')
+convBool sm n vm (Gt a b) = do fa <- convInt sm n vm a
+                               fb <- convInt sm n vm b
+                               return (\env -> fa env > fb env)
 
-convBool sm n (In s set) = do s' <- convState sm n s
-                              set' <- aux set
-                              return (In s' set')
-                                where aux [x] = do x' <- convState sm n x
-                                                   return [x']
-                                      aux (x:xs) = do x' <- convState sm n x
-                                                      xs' <- aux xs
-                                                      return (x':xs')
-                                      aux [] = undefined
+convBool sm n vm (Ge a b) = do fa <- convInt sm n vm a
+                               fb <- convInt sm n vm b
+                               return (\env -> fa env >= fb env)
+
+convBool sm n vm (EqInt a b) = do fa <- convInt sm n vm a
+                                  fb <- convInt sm n vm b
+                                  return (\env -> fa env == fb env)
+
+convBool sm n vm (NeqInt a b) = do fa <- convInt sm n vm a
+                                   fb <- convInt sm n vm b
+                                   return (\env -> fa env /= fb env)
+
+convBool sm n _ (EqState a b) = do fa <- convState sm n a
+                                   fb <- convState sm n b
+                                   return (\env -> fa env == fb env)
+
+convBool sm n _ (NeqState a b) = do fa <- convState sm n a
+                                    fb <- convState sm n b
+                                    return (\env -> fa env /= fb env)
+
+convBool sm n _ (In s set) = do f <- convState sm n s
+                                g <- aux set
+                                return (\env -> let rgba = f env
+                                                    xs = g env
+                                                in foldl (\b x -> b || x == rgba) False xs)
+                                    where aux [x] = do f <- convState sm n x
+                                                       return (\env -> [f env])
+                                          aux (x:xs) = do f <- convState sm n x
+                                                          g <- aux xs
+                                                          return (\env -> f env : g env)
+                                          aux [] = undefined
+
+
+
+-- -- Convert all occasions of Lit STATE_NAME to LitColor STATE_COLOR and check
+-- -- for undefined state, undefined neighbor and undefined variable errors.
+-- -- The convertion is successful if no errors are encountered.
+-- conversion :: States                -- map of states
+--             -> Int                  -- size of neighborhood
+--             -> Vars                 -- map of variables
+--             -> Rule                 -- transition rule
+--             -> Output [Error] Rule
+-- conversion sm n _ (State s) = do s' <- convState sm n s
+--                                  return (State s')
+
+-- conversion sm n vm (If b r1 r2) = do b' <- convBool sm n vm b
+--                                      r1' <- conversion sm n vm r1
+--                                      r2' <- conversion sm n vm r2
+--                                      return (If b' r1' r2')
+
+-- conversion sm n vm (Let id exp rule) = do let vm' = Map.insert id 0 vm
+--                                           rule' <- conversion sm n vm' rule
+--                                           return (Let id exp rule')
+
+-- convState :: States -> Int -> Exp State -> Output [Error] (Exp State)
+-- convState sm _ (Lit name) = case Map.lookup name sm of
+--                                 Just rgba -> return (LitColor rgba)
+--                                 Nothing -> write [UndefState name] >> return (Lit name)
+-- convState _ n t@(Neighbor k) = if k <= n then return t
+--                                          else write [NeighborOutOfRange k] >> return t
+-- convState _ _ s = return s
+
+
+
+-- convInt :: States -> Int -> Vars -> Exp Int -> Output [Error] (Exp Int)
+-- convInt sm n vm (Const k) = return (Const k)
+
+-- convInt sm n vm (Var x) = case Map.lookup x vm of
+--                             Just _ -> return (Var x)
+--                             Nothing -> write [UndefVar x] >> return (Var x)
+
+-- convInt sm n vm (Neighbors state) = do state' <- convState sm n state
+--                                        return (Neighbors state')
+
+-- convInt sm n vm (Opp a) = do a' <- convInt sm n vm a
+--                              return (Opp a')
+
+-- convBool :: States -> Int -> Vars -> Exp Bool -> Output [Error] (Exp Bool)
+-- convBool sm n vm (And a b) = do a' <- convBool sm n vm a
+--                                 b' <- convBool sm n vm b
+--                                 return (And a' b')
+
+-- convBool sm n vm (Or a b) = do a' <- convBool sm n vm a
+--                                b' <- convBool sm n vm b
+--                                return (Or a' b')
+
+-- convBool sm n vm (Lt a b) = do a' <- convInt sm n vm a
+--                                b' <- convInt sm n vm b
+--                                return (Lt a' b')
+
+-- convBool sm n vm (Le a b) = do a' <- convInt sm n vm a
+--                                b' <- convInt sm n vm b
+--                                return (Le a' b')
+
+-- convBool sm n vm (Gt a b) = do a' <- convInt sm n vm a
+--                                b' <- convInt sm n vm b
+--                                return (Gt a' b')
+
+-- convBool sm n vm (Ge a b) = do a' <- convInt sm n vm a
+--                                b' <- convInt sm n vm b
+--                                return (Ge a' b')
+
+-- convBool sm n vm (EqInt a b) = do a' <- convInt sm n vm a
+--                                   b' <- convInt sm n vm b
+--                                   return (EqInt a' b')
+
+-- convBool sm n vm (NeqInt a b) = do a' <- convInt sm n vm a
+--                                    b' <- convInt sm n vm b
+--                                    return (NeqInt a' b')
+
+-- convBool sm n _ (EqState a b) = do a' <- convState sm n a
+--                                    b' <- convState sm n b
+--                                    return (EqState a' b')
+
+-- convBool sm n _ (NeqState a b) = do a' <- convState sm n a
+--                                     b' <- convState sm n b
+--                                     return (NeqState a' b')
+
+-- convBool sm n _ (In s set) = do s' <- convState sm n s
+--                                 set' <- aux set
+--                                 return (In s' set')
+--                                     where aux [x] = do x' <- convState sm n x
+--                                                        return [x']
+--                                           aux (x:xs) = do x' <- convState sm n x
+--                                                           xs' <- aux xs
+--                                                           return (x':xs')
+--                                           aux [] = undefined

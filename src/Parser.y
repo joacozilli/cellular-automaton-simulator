@@ -38,16 +38,13 @@ import qualified Data.Vector as Vector
 'Default'           { TDefault }    
 'cell'              { Tcell }
 'nei'               { Tnei }
-'+'                 { Tsum }
-'-'                 { Tsubs }
-'*'                 { Tprod }
-'/'                 { Tdiv }
 'let'               { Tlet }
 '='                 { Tassign }
 'and'               { Tand }
 'or'                { Tor }
 'not'               { Tnot }
 'in'                { Tin }
+'-'                 { Tminus }
 'False'             { TFalse }
 'True'              { TTrue } 
 '=='                { Teq }
@@ -81,14 +78,12 @@ IDENT               { Tid $$ }
 NAT                 { Tnat $$ }
 
 %nonassoc 'let'
+%right '-'
 %left 'or'
 %left 'and'
 %nonassoc 'not'
 %nonassoc 'in'
 %nonassoc '==' '!=' '<=' '<' '>=' '>'
-%left '+' '-'
-%left '*' '/'
-%right UMINUS
 
 %%
 
@@ -134,12 +129,7 @@ IntExp       :: { Exp Int }
              : NAT                                                     { Const $1 }
              | IDENT                                                   { Var $1 }
              | 'neighbors' '(' StateExp ')'                            { Neighbors $3 }
-             | IntExp '+' IntExp                                       { Sum $1 $3 }
-             | IntExp '-' IntExp                                       { Subs $1 $3 }
-             | IntExp '*' IntExp                                       { Prod $1 $3 }
-             | IntExp '/' IntExp                                       { Div $1 $3 }
-             | '-' IntExp %prec UMINUS                                 { Opp $2 }
-             | '(' IntExp ')'                                          { $2 }
+             | '-' IntExp                                              { Opp $2 }
 
 
 BoolExp      :: { Exp Bool }
@@ -230,8 +220,8 @@ data Token = TCA
              | Tcase | Totherwise | Tcond
              | TDefault
              | Tcell | Tnei
-             | Tsum | Tsubs | Tprod | Tdiv
              | Tlet | Tassign
+             | Tminus
              | Tand | Tor | Tnot | Tin
              | TFalse | TTrue
              | Teq | Tneq | Tle | Tlesser | Tge | Tgreater
@@ -270,10 +260,7 @@ lexer cont s = case s of
                                                      , (',', Tcomma)
                                                      , ('|', Tsep)
                                                      , (':', Tcond)
-                                                     , ('+', Tsum)
-                                                     , ('-', Tsubs)
-                                                     , ('*', Tprod)
-                                                     , ('/', Tdiv)
+                                                     , ('-', Tminus)
                                                      , ('<', Tlesser)
                                                      , ('>', Tgreater)
                                                      , ('=', Tassign) ]

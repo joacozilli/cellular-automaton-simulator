@@ -5,14 +5,15 @@ Automaton myCA {
     Neighborhood := (1,0) |(0,1)
 
     Transition {
-        case {
-            nei(1) == nei(4) : { pito }
-            nei(2) == cell : { two }
-            neighbors(cell) > 1 : { one }
-            otherwise : { esta }
-        }
+        if cell in [one, two]
+            then let x = neighbors(one) in let y = 1+3 in cell
+            else nei(1)
 
     }
 
     Default := two
 }
+
+[neighbors(one), (1+3)]
+
+If (In Self [Lit "one", Lit "two"]) (LetConv (Idx 0) (LetConv (Idx 1) Self))

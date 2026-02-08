@@ -80,6 +80,17 @@ cellColor (vector,_,_) idx def = if idx == -1
                                     then def
                                     else vector SVector.! idx
 
+-- given a coord and size of grid, return corresponding cell in grid
+-- of such coord in a toroidal frontier
+toroidCell :: Coord -> Int -> Int -> Coord
+toroidCell (i,j) n m = (a,b) where
+    a | i >= n = i-n
+      | i < 0 = n+i
+      | otherwise = i
+    b | j >= m = j-m
+      | j < 0 = m+j
+      | otherwise = j
+    
 
 
 

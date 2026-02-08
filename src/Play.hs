@@ -71,9 +71,8 @@ update :: Float -> World -> World
 update _ w = if paused w
               then w
               else let (CA _ sm vn r def) = automata w
-                    in case globalTransition (conf w) r (neighbors w) (frontier w) (fromJust $ Map.lookup def sm) of
-                        Left err -> errorWorld
-                        Right newconf -> w {conf = newconf, instant = instant w + 1, initial = False}
+                       newconf = globalTransition (conf w) (transition w) (neighbors w) (frontier w) (fromJust $ Map.lookup def sm)
+                    in  w {conf = newconf, instant = instant w + 1, initial = False}
 
 
 
@@ -83,7 +82,7 @@ handleInput (EventKey (SpecialKey KeySpace) Down _ _) w = w {paused = not (pause
 
 -- restart simulation with r
 handleInput (EventKey (Char 'r') Down _ _) w = let (_,n,m) = conf w
-                                                in (initWorld (automata w) (frontier w) n m) {drawScale = drawScale w}
+                                                in (initWorld (automata w) (frontier w) (transition w) n m) {drawScale = drawScale w}
 
 -- click on cell to change color
 handleInput (EventKey (MouseButton LeftButton) Down _ position) w =
@@ -114,17 +113,18 @@ initConf n m = let c = [f k | k <- [0..(n*m)-1]]
                 in (SVector.fromListN (n*m) c, n, m)
 
 -- initial world prior to starting simulation
-initWorld :: Automata -> Frontier -> Int -> Int -> World
-initWorld ca@(CA _ _ nv _ _) fr n m = World {automata = ca,
-                                            conf = initConf n m,
-                                            neighbors = computeNeighbors n m nv fr,
-                                            instant = 0,
-                                            frontier = fr,
-                                            paused = True,
-                                            initial = True,
-                                            drawScale = 5,
-                                            speed = 1.0
-                                            }
+initWorld :: Automata -> Frontier -> (Env -> RGBA) -> Int -> Int -> World
+initWorld ca@(CA _ _ nv _ _) fr f n m = World {automata = ca,
+                                              transition = f,
+                                              conf = initConf n m,
+                                              neighbors = computeNeighbors n m nv fr,
+                                              instant = 0,
+                                              frontier = fr,
+                                              paused = True,
+                                              initial = True,
+                                              drawScale = 5,
+                                              speed = 1.0
+                                              }
 
 
 

@@ -31,23 +31,20 @@ type States = Map.Map State RGBA
 -- cellular automata with its name, states, neighborhood, transition rule and default state
 data Automata = CA Name States Neighborhood Rule State  deriving Show
 
-data Rule = If (Exp Bool) Rule Rule | State (Exp State) | Let String (Exp Int) Rule deriving Show
+data Rule = If (Exp Bool) Rule Rule | State (Exp State) | Let Name (Exp Int) Rule
+
+deriving instance Show Rule
 
 data Exp a where
     -- state expressions
     Self :: Exp State
     Neighbor :: Int -> Exp State
     Lit :: String -> Exp State
-    LitColor :: RGBA -> Exp State
 
     -- int expressions
     Var :: String -> Exp Int
     Const :: Int -> Exp Int
     Neighbors :: Exp State -> Exp Int
-    Sum :: Exp Int -> Exp Int -> Exp Int
-    Subs :: Exp Int -> Exp Int -> Exp Int
-    Prod :: Exp Int -> Exp Int -> Exp Int
-    Div :: Exp Int -> Exp Int -> Exp Int
     Opp :: Exp Int -> Exp Int
     
 
@@ -69,6 +66,16 @@ data Exp a where
 
 deriving instance Show (Exp a)
 
+type Vars = Map.Map Name Int
+
+data Env = Env {cell :: Int,
+                envConf :: Conf,
+                envNeighbors :: LitNeighbors,
+                envVars :: Vars,
+                envFrontier :: Frontier,
+                defaultColor :: RGBA
+                }     
+
 -- configuration of an instant
 type Conf = (SVector.Vector RGBA, -- unidimensional representation of grid
                             Int,  -- number of rows
@@ -82,6 +89,7 @@ data Frontier = Default  -- neighbors outside grid range are considered of defau
               | Toroidal -- grid is considered a toroid
 
 data World = World {automata :: Automata,
+                    transition :: Env -> RGBA,
                     conf :: Conf,
                     neighbors :: LitNeighbors,
                     instant:: Int,
@@ -92,4 +100,4 @@ data World = World {automata :: Automata,
                     speed :: Float
                     }
 
-data Error = UndefState Name | NeighborOutOfRange Int | ZeroDiv
+data Error = UndefState Name | NeighborOutOfRange Int | UndefVar Name | ZeroDiv
