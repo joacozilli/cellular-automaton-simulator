@@ -47,6 +47,7 @@ library
     , containers
     , gloss
     , mtl
+    , parallel
     , transformers
     , vector
   default-language: Haskell2010
@@ -73,6 +74,7 @@ executable CAsim-exe
     , containers
     , gloss
     , mtl
+    , parallel
     , transformers
     , vector
   default-language: Haskell2010
@@ -98,6 +100,7 @@ test-suite CAsim-test
     , containers
     , gloss
     , mtl
+    , parallel
     , transformers
     , vector
   default-language: Haskell2010

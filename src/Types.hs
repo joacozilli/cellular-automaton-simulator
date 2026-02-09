@@ -73,7 +73,7 @@ data Env = Env {cell :: Int,
                 envNeighbors :: LitNeighbors,
                 envVars :: Vars,
                 envFrontier :: Frontier,
-                defaultColor :: RGBA
+                envDefaultColor :: RGBA
                 }     
 
 -- configuration of an instant
@@ -88,16 +88,19 @@ type LitNeighbors = Vector.Vector (Vector.Vector Int)
 data Frontier = Default  -- neighbors outside grid range are considered of default color
               | Toroidal -- grid is considered a toroid
 
+-- world type for play
 data World = World {automata :: Automata,
                     transition :: Env -> RGBA,
                     conf :: Conf,
                     neighbors :: LitNeighbors,
-                    instant:: Int,
+                    states :: States,
+                    defaultColor :: RGBA,
                     frontier :: Frontier,
                     paused :: Bool,
                     initial :: Bool,
+                    instant:: Int,
                     drawScale :: Float,
                     speed :: Float
                     }
 
-data Error = UndefState Name | NeighborOutOfRange Int | UndefVar Name | ZeroDiv
+data Error = UndefState Name | NeighborOutOfRange Int | UndefVar Name

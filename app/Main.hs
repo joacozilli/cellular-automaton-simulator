@@ -12,8 +12,6 @@ import Graphics.Gloss.Data.Display
 import Graphics.Gloss.Data.Color
 import Graphics.Gloss.Interface.Pure.Game
 
-rule :: Automata -> Rule
-rule (CA _ _ _ r _) = r
 
 disp :: Display
 disp = InWindow "grid" (1000,1000) (0,0)
@@ -37,8 +35,8 @@ printError (UndefVar name) = putStrLn ("  - undefined variable \""++name++"\" re
 checkRule :: Automata -> IO ()
 checkRule (CA name states neigh rule def) = let n = Vector.length neigh
                                             in case conversion states n Map.empty rule of
-                                                Out (res,[]) -> do play disp white 20
-                                                                      (initWorld (CA name states neigh rule def) Toroidal res 500 500)
+                                                Out (res,[]) -> do play disp white 15
+                                                                      (initWorld (CA name states neigh rule def) Toroidal res 800 800)
                                                                       draw
                                                                       handleInput
                                                                       update

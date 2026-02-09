@@ -2,14 +2,12 @@ module Play where
 
 import                  Types
 import                  Eval
-import                  Conv
+import                  Conv ()
 import                  Utils
 import                  Graphics.Gloss.Data.Bitmap
 import                  Graphics.Gloss.Interface.Pure.Game
-import qualified        Data.ByteString as B
-import qualified        Data.ByteString.Internal as BI
 import qualified        Data.Vector.Storable as SVector
-import                  Data.Word (Word8)
+import                  Data.Word ()
 import qualified        Data.Map.Strict as Map
 import                  Data.Maybe
 
@@ -19,8 +17,7 @@ drawLegend :: World -> Picture
 drawLegend w =
   let (_, n, m) = conf w           -- n = width (cols), m = height (rows)
       s = drawScale w
-      (CA _ states _ _ _) = automata w
-      items = Map.toList states
+      items = Map.toList (states w)
       wpx = fromIntegral n * s
       hpx = fromIntegral m * s
       y = -hpx / 2 - 30            -- legend y position (below grid)
@@ -45,13 +42,6 @@ gridLines n m s = verticalLines ++ horizontalLines
     horizontalLines = [color black $ line [(-w / 2, y), ( w / 2, y)] | j <- [0 .. m], let y = -h / 2 + fromIntegral j * s]
 
 
--- convert vector of RGBA to a bytestring in O(1)
-buildByteString :: SVector.Vector RGBA -> B.ByteString
-buildByteString v = let v8 :: SVector.Vector Word8
-                        v8 = SVector.unsafeCast v
-                        (ptr,off,len) = SVector.unsafeToForeignPtr v8
-                    in BI.fromForeignPtr ptr off len
-
 drawAux :: World -> Picture
 drawAux w = let (config,n,m) = conf w in bitmapOfByteString n m (BitmapFormat TopToBottom PxRGBA) (buildByteString config) False
 
@@ -70,8 +60,7 @@ draw w = if initial w || True
 update :: Float -> World -> World
 update _ w = if paused w
               then w
-              else let (CA _ sm vn r def) = automata w
-                       newconf = globalTransition (conf w) (transition w) (neighbors w) (frontier w) (fromJust $ Map.lookup def sm)
+              else let newconf = globalTransitionPAR (conf w) (transition w) (neighbors w) (frontier w) (defaultColor w)
                     in  w {conf = newconf, instant = instant w + 1, initial = False}
 
 
@@ -84,10 +73,16 @@ handleInput (EventKey (SpecialKey KeySpace) Down _ _) w = w {paused = not (pause
 handleInput (EventKey (Char 'r') Down _ _) w = let (_,n,m) = conf w
                                                 in (initWorld (automata w) (frontier w) (transition w) n m) {drawScale = drawScale w}
 
+-- go to next instant with n
+handleInput (EventKey (Char 'n') Down _ _) w = if paused w && not (initial w)
+                                                then let w' = update 0 w { paused = False }
+                                                      in w' { paused = True }
+                                                else w
+
 -- click on cell to change color
 handleInput (EventKey (MouseButton LeftButton) Down _ position) w =
       if initial w
-        then let (confVec,n,m) = conf w
+        then let (_,n,m) = conf w
               in case mouseToCell n m position (drawScale w) of
                   Just cell -> w {conf = colorCell cell (colorToRGBA black) (conf w)}
                   Nothing -> w
@@ -100,9 +95,7 @@ handleInput (EventKey (MouseButton WheelDown) _ _ _) w = w {drawScale = max (dra
 handleInput (EventKey (SpecialKey KeyDown) Down _ _) w = w {drawScale = max (drawScale w - 1) 2}                                             
 handleInput _ w = w
 
--- error world to display in case of error
-errorWorld :: World
-errorWorld = undefined
+
 
 f :: Int -> RGBA
 f _ = colorToRGBA white
@@ -114,17 +107,18 @@ initConf n m = let c = [f k | k <- [0..(n*m)-1]]
 
 -- initial world prior to starting simulation
 initWorld :: Automata -> Frontier -> (Env -> RGBA) -> Int -> Int -> World
-initWorld ca@(CA _ _ nv _ _) fr f n m = World {automata = ca,
-                                              transition = f,
-                                              conf = initConf n m,
-                                              neighbors = computeNeighbors n m nv fr,
-                                              instant = 0,
-                                              frontier = fr,
-                                              paused = True,
-                                              initial = True,
-                                              drawScale = 5,
-                                              speed = 1.0
-                                              }
+initWorld ca@(CA _ sm nv _ def) fr f n m = World { transition = f,
+                                                   conf = initConf n m,
+                                                   neighbors = computeNeighbors n m nv fr,
+                                                   states = sm,
+                                                   defaultColor = fromJust $ Map.lookup def sm,
+                                                   frontier = fr,
+                                                   paused = True,
+                                                   initial = True,
+                                                   instant = 0,
+                                                   drawScale = 5,
+                                                   speed = 1.0
+                                                 }
 
 
 
