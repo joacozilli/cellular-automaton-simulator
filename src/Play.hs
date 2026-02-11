@@ -81,7 +81,7 @@ handleInput (EventKey (MouseButton LeftButton) Down _ position) w =
       if initial w
         then let (_,n,m) = conf w
               in case mouseToCell n m (translation w) position (drawScale w) of
-                  Just x -> w {conf = colorCell x (colorToRGBA black) (conf w)}
+                  Just x -> w {conf = colorCell x (nextColor (conf w) x (colors w)) (conf w)}
                   Nothing -> w
         else w      
 
@@ -95,19 +95,19 @@ handleInput (EventKey (SpecialKey KeyDown) Down _ _) w = w {drawScale = max (dra
 handleInput (EventKey (Char 'a') Down _ _) w = let (x,y) = translation w
                                                    (_,n,_) = conf w
                                                    width = fromIntegral n
-                                                in w {translation = (x - drawScale w * width*0.1, y)}
+                                                in w {translation = (x + drawScale w * width*0.1, y)}
 handleInput (EventKey (Char 'd') Down _ _) w = let (x,y) = translation w
                                                    (_,n,_) = conf w
                                                    width = fromIntegral n
-                                                in w {translation = (x + drawScale w * width*0.1, y)}
+                                                in w {translation = (x - drawScale w * width*0.1, y)}
 handleInput (EventKey (Char 'w') Down _ _) w = let (x,y) = translation w 
                                                    (_,_,m) = conf w
                                                    height = fromIntegral m                       
-                                                in w {translation = (x, y + drawScale w * height*0.1)}
+                                                in w {translation = (x, y - drawScale w * height*0.1)}
 handleInput (EventKey (Char 's') Down _ _) w = let (x,y) = translation w 
                                                    (_,_,m) = conf w
                                                    height = fromIntegral m                   
-                                                in w {translation = (x, y - drawScale w * height*0.1)}
+                                                in w {translation = (x, y + drawScale w * height*0.1)}
 
 -- recenter with c
 handleInput (EventKey (Char 'c') Down _ _) w = w {translation = (0,0)}
@@ -121,7 +121,7 @@ initConf :: Int -> Int -> RGBA -> Conf
 initConf n m def = let c = [ def | _ <- [0..(n*m)-1]]
                     in (SVector.fromListN (n*m) c, n, m)
 
--- initial world prior to starting simulation
+-- Initial world prior to starting simulation.
 initWorld :: Automata 
           -> Frontier
           -> (Env -> RGBA)  -- converted transition rule
@@ -132,7 +132,7 @@ initWorld (CA _ sm nv _ def) fr f n m = let defcolor = fromJust $ Map.lookup def
                                           in World { transition = f,
                                                       conf = initConf n m defcolor,
                                                       neighbors = computeNeighbors n m nv fr,
-                                                      states = sm,
+                                                      colors = Map.elems sm,
                                                       defaultColor = defcolor,
                                                       frontier = fr,
                                                       paused = True,
@@ -141,7 +141,7 @@ initWorld (CA _ sm nv _ def) fr f n m = let defcolor = fromJust $ Map.lookup def
                                                       drawScale = 5,
                                                       translation = (0,0),
                                                       speed = 1.0
-                                                }
+                                                   }
 
 
 

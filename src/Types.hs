@@ -13,7 +13,7 @@ type RGBA = Word32
 type Name = String
 type State = Name
 
--- literal coordinate
+-- literal coordinate in grid
 newtype Coord = Coord (Int, Int) deriving Show
 
 instance Num Coord where
@@ -88,7 +88,7 @@ data Frontier = Default  -- neighbors outside grid range are considered of defau
 data World = World {transition :: Env -> RGBA,
                     conf :: Conf,
                     neighbors :: LitNeighbors,
-                    states :: States,
+                    colors :: [RGBA],
                     defaultColor :: RGBA,
                     frontier :: Frontier,
                     paused :: Bool,

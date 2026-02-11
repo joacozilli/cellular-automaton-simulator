@@ -9,7 +9,6 @@ import qualified        Data.Vector.Storable as SVector
 import qualified        Data.Vector.Storable.Mutable as MSVector (unsafeNew, unsafeWrite)
 import qualified        Data.ByteString as B
 import qualified        Data.ByteString.Internal as BI (fromForeignPtr)
-import                  Control.Monad.ST
 
 -- Pack 4 word8 representing a color in rgba format to a single word32 (RGBA type).
 -- Endianness is considered so byte order is always [r,g,b,a].
@@ -112,28 +111,29 @@ mouseToCell :: Int             -- number of rows of grid
             -> (Float, Float)  -- world translation
             -> (Float, Float)  -- mouse position in gloss coordinate system
             -> Float           -- drawing scale
-            -> Maybe Coord
+            -> Maybe Int
 mouseToCell n m (tx,ty) (x,y) s = let h = fromIntegral n * s
                                       w = fromIntegral m * s
                                       (xx,yy) = (x - tx, y - ty)
                                       inGrid = xx >= -w/2 && xx < w/2 && yy >= -h/2 && yy < h/2
                                   in if inGrid
                                     then let (i,j) =  (floor ( h/2 - yy - 1), floor (xx + w/2))
-                                          in Just $ Coord (i `div` floor s, j `div` floor s)
+                                          in Just $ unidim (Coord (i `div` floor s, j `div` floor s)) m
                                     else Nothing
 
--- Color cell in grid. Used for mouse event.
-colorCell :: Coord -> RGBA -> Conf -> Conf
-colorCell c color (confvec,n,m) =
-    let newconf = runST $ do
-                          let len = n*m
-                              idx = unidim c m
-                          new <- MSVector.unsafeNew len
-                          let loop i | i == len = return ()
-                                     | i == idx = do MSVector.unsafeWrite new i color
-                                                     loop (i+1)
-                                     | otherwise = do MSVector.unsafeWrite new i (confvec SVector.! i)
-                                                      loop (i+1)
-                          loop 0
-                          SVector.unsafeFreeze new
-    in (newconf,n,m)
+-- Read color of a cell and return next color in list of colors.
+nextColor :: Conf -> Int -> [RGBA] -> RGBA
+nextColor (confvec,_,_) k clist = let c = confvec SVector.! k in next c clist
+                                  where
+                                    next x (y:ys) = if x == y
+                                                    then if null ys
+                                                          then head clist
+                                                          else head ys
+                                                    else next x ys
+                                    next _ [] = undefined
+
+-- Color cell in grid.
+colorCell :: Int -> RGBA -> Conf -> Conf
+colorCell k color (confvec,n,m) = let newconf = SVector.generate (n*m) (\i ->
+                                        if i == k then color else confvec SVector.! i)
+                                    in (newconf,n,m)
