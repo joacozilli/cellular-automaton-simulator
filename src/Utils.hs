@@ -56,22 +56,22 @@ rgbaToColor rgba =
 unidim :: Coord -- coordinate
         -> Int  -- number of columns
         -> Int
-unidim (i,j) m = i*m + j
+unidim (Coord (i,j)) m = i*m + j
 
 -- Convert index of unidimensional vector to coordinate.
 -- The index is assumed to be in range.
 bidim :: Int -- index
       -> Int -- number of columns
       -> Coord
-bidim k m = (k `div` m, k `mod` m)
+bidim k m = Coord (k `div` m, k `mod` m)
 
 -- Verify if given coordinate is in range of grid.
 validIndex :: Coord
            -> Int   -- number of rows 
            -> Int   -- number of columns
            -> Bool
-validIndex (i,j) n m = i >= 0 && i <= n-1
-                    && j >= 0 && j <= m-1
+validIndex (Coord (i,j)) n m = i >= 0 && i <= n-1
+                            && j >= 0 && j <= m-1
 
 
 -- Return corresponding color of a cell in a configuration.
@@ -86,14 +86,14 @@ cellColor (vector,_,_) idx def = if idx == -1
 -- Given a coord and size of grid, return corresponding cell in grid
 -- of such coord with a toroidal frontier.
 toroidCell :: Coord -> Int -> Int -> Coord
-toroidCell (i,j) n m = (a,b) where
-    a | i >= n = i-n
-      | i < 0 = n+i
-      | otherwise = i
+toroidCell (Coord (i,j)) n m = Coord (a,b) where
+                            a | i >= n = i-n
+                              | i < 0 = n+i
+                              | otherwise = i
 
-    b | j >= m = j-m
-      | j < 0 = m+j
-      | otherwise = j
+                            b | j >= m = j-m
+                              | j < 0 = m+j
+                              | otherwise = j
     
 -- Convert vector of RGBA to a bytestring.
 buildByteString :: SVector.Vector RGBA -> B.ByteString
@@ -119,7 +119,7 @@ mouseToCell n m (tx,ty) (x,y) s = let h = fromIntegral n * s
                                       inGrid = xx >= -w/2 && xx < w/2 && yy >= -h/2 && yy < h/2
                                   in if inGrid
                                     then let (i,j) =  (floor ( h/2 - yy - 1), floor (xx + w/2))
-                                          in Just (i `div` floor s, j `div` floor s)
+                                          in Just $ Coord (i `div` floor s, j `div` floor s)
                                     else Nothing
 
 -- Color cell in grid. Used for mouse event.

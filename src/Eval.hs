@@ -21,13 +21,13 @@ computeNeighbors :: Int            -- number of rows in grid
                  -> LitNeighbors
 computeNeighbors n m v fr = Vector.generate (n*m) $ \k ->
                                 Vector.generate (Vector.length v) $ \l ->
-                                    let cell = bidim k m
-                                        (i,j) = cell + (v Vector.! l)
-                                    in if validIndex (i,j) n m
-                                        then unidim (i,j) m
+                                    let c = bidim k m
+                                        x = c + (v Vector.! l)
+                                    in if validIndex x n m
+                                        then unidim x m
                                         else case fr of
                                                 Default -> -1
-                                                Toroidal -> unidim (toroidCell (i,j) n m) m
+                                                Toroidal -> unidim (toroidCell x n m) m
 
 
 
@@ -68,10 +68,10 @@ globalTransitionPAR :: Conf
 globalTransitionPAR c@(_,n,m) func neighs fr def =
                     let len = n*m
                         chunkSize = div len numCapabilities
-                        chunkRanges size len = go 0 where go i | i >= len = []
-                                                               | otherwise =
-                                                                let j = min (i+size-1) (len-1)
-                                                                in (i,j) : go (j+1)
+                        chunkRanges size limit = go 0 where go i | i >= limit = []
+                                                                 | otherwise =
+                                                                    let j = min (i+size-1) (len-1)
+                                                                    in (i,j) : go (j+1)
                         ranges = chunkRanges chunkSize len
 
                         buildChunks (start,end) = SVector.generate (end-start+1) (\i ->

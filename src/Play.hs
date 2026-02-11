@@ -25,7 +25,10 @@ legend w = let (_,n,m) = conf w
             in Pictures [rect,gentext]
 
 
-gridLines :: Int -> Int -> Float -> [Picture]
+gridLines :: Int        -- number of rows in grid
+          -> Int        -- number of columns in grid
+          -> Float      -- drawing scale
+          -> [Picture]
 gridLines n m s = verticalLines ++ horizontalLines
   where
     w = fromIntegral m * s
@@ -78,7 +81,7 @@ handleInput (EventKey (MouseButton LeftButton) Down _ position) w =
       if initial w
         then let (_,n,m) = conf w
               in case mouseToCell n m (translation w) position (drawScale w) of
-                  Just cell -> w {conf = colorCell cell (colorToRGBA black) (conf w)}
+                  Just x -> w {conf = colorCell x (colorToRGBA black) (conf w)}
                   Nothing -> w
         else w      
 
@@ -115,7 +118,7 @@ handleInput _ w = w
 
 -- Initial configuration (all cells default color).
 initConf :: Int -> Int -> RGBA -> Conf
-initConf n m def = let c = [ def | k <- [0..(n*m)-1]]
+initConf n m def = let c = [ def | _ <- [0..(n*m)-1]]
                     in (SVector.fromListN (n*m) c, n, m)
 
 -- initial world prior to starting simulation
@@ -125,20 +128,20 @@ initWorld :: Automata
           -> Int            -- number of rows in grid
           -> Int            -- number of columns in grid
           -> World
-initWorld ca@(CA _ sm nv _ def) fr f n m = let defcolor = fromJust $ Map.lookup def sm
-                                            in World { transition = f,
-                                                       conf = initConf n m defcolor,
-                                                       neighbors = computeNeighbors n m nv fr,
-                                                       states = sm,
-                                                       defaultColor = defcolor,
-                                                       frontier = fr,
-                                                       paused = True,
-                                                       initial = True,
-                                                       instant = 0,
-                                                       drawScale = 5,
-                                                       translation = (0,0),
-                                                       speed = 1.0
-                                                     }
+initWorld (CA _ sm nv _ def) fr f n m = let defcolor = fromJust $ Map.lookup def sm
+                                          in World { transition = f,
+                                                      conf = initConf n m defcolor,
+                                                      neighbors = computeNeighbors n m nv fr,
+                                                      states = sm,
+                                                      defaultColor = defcolor,
+                                                      frontier = fr,
+                                                      paused = True,
+                                                      initial = True,
+                                                      instant = 0,
+                                                      drawScale = 5,
+                                                      translation = (0,0),
+                                                      speed = 1.0
+                                                }
 
 
 

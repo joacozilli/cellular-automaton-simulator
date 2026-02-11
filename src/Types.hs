@@ -2,11 +2,7 @@
 module Types where
 
 
-import           Data.Word (Word8,Word32)
-import           Graphics.Gloss.Data.Color
-import           Graphics.Gloss.Data.Bitmap
-import           Graphics.Gloss.Interface.Pure.Game
-
+import           Data.Word (Word32)
 import qualified Data.Vector as Vector
 import qualified Data.Vector.Storable as SVector
 import qualified Data.Map.Strict as Map
@@ -18,10 +14,10 @@ type Name = String
 type State = Name
 
 -- literal coordinate
-type Coord = (Int, Int)
+newtype Coord = Coord (Int, Int) deriving Show
 
-instance Num (Int,Int) where
-    (x1, y1) + (x2, y2) = (x1 + x2, y1 + y2)
+instance Num Coord where
+   (Coord (x1, y1)) + (Coord (x2, y2)) = Coord (x1 + x2, y1 + y2)
 
 
 -- neighborhood as it is defined by automata
@@ -89,8 +85,7 @@ data Frontier = Default  -- neighbors outside grid range are considered of defau
               | Toroidal -- grid is considered a toroid
 
 -- world type for play
-data World = World {automata :: Automata,
-                    transition :: Env -> RGBA,
+data World = World {transition :: Env -> RGBA,
                     conf :: Conf,
                     neighbors :: LitNeighbors,
                     states :: States,

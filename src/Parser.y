@@ -104,10 +104,10 @@ Neighborhood :: { Neighborhood }
              | Litcoord '|' Neighborhood                               { Vector.cons $1 $3 }
              
 Litcoord     :: { Coord }
-             : '(' NAT ',' NAT ')'                                     { (-$4,$2) } 
-             | '(' '-' NAT ',' NAT ')'                                 { (-$5,-$3) }   
-             | '(' NAT ',' '-' NAT ')'                                 { ($5,$2) }   
-             | '(' '-' NAT ',' '-' NAT ')'                             { ($6,-$3) }
+             : '(' NAT ',' NAT ')'                                     { Coord (-$4,$2) } 
+             | '(' '-' NAT ',' NAT ')'                                 { Coord (-$5,-$3) }   
+             | '(' NAT ',' '-' NAT ')'                                 { Coord ($5,$2) }   
+             | '(' '-' NAT ',' '-' NAT ')'                             { Coord ($6,-$3) }
 
 Rule         :: { Rule }
              : StateExp                                                { State $1 }
