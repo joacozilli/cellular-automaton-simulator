@@ -102,7 +102,7 @@ State        :: { Map.Map State RGBA -> Map.Map State RGBA }
 Neighborhood :: { Neighborhood }
              : Litcoord                                                { Vector.singleton $1 }
              | Litcoord '|' Neighborhood                               { Vector.cons $1 $3 }
-
+             
 Litcoord     :: { Coord }
              : '(' NAT ',' NAT ')'                                     { (-$4,$2) } 
              | '(' '-' NAT ',' NAT ')'                                 { (-$5,-$3) }   

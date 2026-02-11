@@ -33,16 +33,16 @@ printError (NeighborOutOfRange k) = putStrLn ("  - trying to access invalid/out 
 printError (UndefVar name) = putStrLn ("  - undefined variable \""++name++"\" referenced in transition rule")
 
 checkRule :: Automata -> IO ()
-checkRule (CA name states neigh rule def) = let n = Vector.length neigh
-                                            in case conversion states n Map.empty rule of
-                                                Out (res,[]) -> do play disp white 15
-                                                                      (initWorld (CA name states neigh rule def) Toroidal res 800 800)
-                                                                      draw
-                                                                      handleInput
-                                                                      update
-                                                Out (res,errors) -> do putStrLn "[ERROR] following errors where detected in automata definition:"
-                                                                       aux errors
-                                          where
-                                            aux [e] = printError e
-                                            aux (e:es) = do printError e
-                                                            aux es
+checkRule ca@(CA name states neigh rule def) = let n = Vector.length neigh
+                                                in case conversion states n Map.empty rule of
+                                                    Out (res,[]) -> do play disp white 15
+                                                                          (initWorld ca Toroidal res 453 887)
+                                                                          draw
+                                                                          handleInput
+                                                                          update
+                                                    Out (res,errors) -> do putStrLn "[ERROR] following errors where detected in automata definition:"
+                                                                           aux errors
+                                              where
+                                                aux [e] = printError e
+                                                aux (e:es) = do printError e
+                                                                aux es

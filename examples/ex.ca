@@ -2,18 +2,12 @@ Automaton myCA {
     States := one : white
     | two : black
 
-    Neighborhood := (1,0) |(0,1)
+    Neighborhood := (-1,0)
 
     Transition {
-        if cell in [one, two]
-            then let x = neighbors(one) in let y = 1+3 in cell
-            else nei(1)
+        if cell != nei(1) then nei(1) else cell
 
     }
 
-    Default := two
+    Default := one
 }
-
-[neighbors(one), (1+3)]
-
-If (In Self [Lit "one", Lit "two"]) (LetConv (Idx 0) (LetConv (Idx 1) Self))

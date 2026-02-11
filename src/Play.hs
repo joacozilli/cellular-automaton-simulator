@@ -12,51 +12,41 @@ import qualified        Data.Map.Strict as Map
 import                  Data.Maybe
 
 
--- draw a legend with state color boxes and labels below the grid, and generation info
-drawLegend :: World -> Picture
-drawLegend w =
-  let (_, n, m) = conf w           -- n = width (cols), m = height (rows)
-      s = drawScale w
-      items = Map.toList (states w)
-      wpx = fromIntegral n * s
-      hpx = fromIntegral m * s
-      y = -hpx / 2 - 30            -- legend y position (below grid)
-      boxW = 20
-      boxH = 20
-      spacing = 10
-      startX = -wpx / 2 + 10
-      statePics = zipWith (\(name,rgba) idx ->
-                  translate (startX + fromIntegral idx * (boxW + spacing)) y $
-                    Pictures [ color (rgbaToColor rgba) $ rectangleSolid boxW boxH
-                             , translate (boxW/2 + 5) 0 $ scale 0.18 0.18 $ Text name
-                             ]) items [0..]
-      genPic = translate ( -wpx/2 + 10 ) (y - 20) $ scale 0.2 0.2 $ Text ("gen: " ++ show (instant w))
-  in Pictures (statePics ++ [genPic])
+
+legend :: World -> Picture
+legend w = let (_,n,m) = conf w
+               s = drawScale w
+               width = fromIntegral m * s
+               height = fromIntegral n * s
+               boxW = width * 0.1
+               boxH = height
+               gentext = translate (width/2) (boxH/2) $ scale 0.1 0.1 $ Text ("gen " ++ show (instant w))
+               rect = translate (width/2 + boxW/2) 0 $ color red $ rectangleSolid boxW boxH
+            in Pictures [rect,gentext]
+
 
 gridLines :: Int -> Int -> Float -> [Picture]
 gridLines n m s = verticalLines ++ horizontalLines
   where
-    w = fromIntegral n * s
-    h = fromIntegral m * s
-    verticalLines = [color black $ line [(x, -h / 2), (x,  h / 2)] | i <- [0 .. n], let x = -w / 2 + fromIntegral i * s]
-    horizontalLines = [color black $ line [(-w / 2, y), ( w / 2, y)] | j <- [0 .. m], let y = -h / 2 + fromIntegral j * s]
+    w = fromIntegral m * s
+    h = fromIntegral n * s
+    verticalLines = [color black $ line [(x, -h/2), (x, h/2)] | i <- [0..m], let x = -w/2 + fromIntegral i * s]
+    horizontalLines = [color black $ line [(-w/2, y), (w/2, y)] | j <- [0..n], let y = -h/2 + fromIntegral j * s]
 
 
 drawAux :: World -> Picture
-drawAux w = let (config,n,m) = conf w in bitmapOfByteString n m (BitmapFormat TopToBottom PxRGBA) (buildByteString config) False
+drawAux w = let (config,n,m) = conf w in bitmapOfByteString m n (BitmapFormat TopToBottom PxRGBA) (buildByteString config) False
 
--- generate picture from a world and scale it to cell size
+-- Generate picture from a world.
 draw :: World -> Picture
-draw w = if initial w || True
-            then let (_,n,m) = conf w
-                     s = drawScale w
-                     grid = Pictures (scale s s (drawAux w) : gridLines n m s)
-                     legend = drawLegend w
-                  in Pictures [grid, legend]
-            else scale (drawScale w) (drawScale w) $ drawAux w
+draw w = let (_,n,m) = conf w
+             s = drawScale w
+             grid = Pictures (scale s s (drawAux w) : gridLines n m s)
+             (x,y) = translation w
+          in Translate x y (Pictures [grid, legend w])
 
 
-
+-- Update to next world.
 update :: Float -> World -> World
 update _ w = if paused w
               then w
@@ -71,10 +61,14 @@ handleInput (EventKey (SpecialKey KeySpace) Down _ _) w = w {paused = not (pause
 
 -- restart simulation with r
 handleInput (EventKey (Char 'r') Down _ _) w = let (_,n,m) = conf w
-                                                in (initWorld (automata w) (frontier w) (transition w) n m) {drawScale = drawScale w}
+                                                in w {conf = initConf n m (defaultColor w),
+                                                      instant = 0,
+                                                      paused = True,
+                                                      initial = True
+                                                     }
 
 -- go to next instant with n
-handleInput (EventKey (Char 'n') Down _ _) w = if paused w && not (initial w)
+handleInput (EventKey (Char 'n') Down _ _) w = if paused w
                                                 then let w' = update 0 w { paused = False }
                                                       in w' { paused = True }
                                                 else w
@@ -83,42 +77,68 @@ handleInput (EventKey (Char 'n') Down _ _) w = if paused w && not (initial w)
 handleInput (EventKey (MouseButton LeftButton) Down _ position) w =
       if initial w
         then let (_,n,m) = conf w
-              in case mouseToCell n m position (drawScale w) of
+              in case mouseToCell n m (translation w) position (drawScale w) of
                   Just cell -> w {conf = colorCell cell (colorToRGBA black) (conf w)}
                   Nothing -> w
-        else w
-        
+        else w      
+
 -- zoom in/out with mouse wheel or arrows
 handleInput (EventKey (SpecialKey KeyUp) Down _ _) w = w {drawScale = 1 + drawScale w}
 handleInput (EventKey (MouseButton WheelUp) _ _ _) w = w {drawScale = 1 + drawScale w}
 handleInput (EventKey (MouseButton WheelDown) _ _ _) w = w {drawScale = max (drawScale w - 1) 2}
-handleInput (EventKey (SpecialKey KeyDown) Down _ _) w = w {drawScale = max (drawScale w - 1) 2}                                             
+handleInput (EventKey (SpecialKey KeyDown) Down _ _) w = w {drawScale = max (drawScale w - 1) 2}   
+
+-- move around with WASD
+handleInput (EventKey (Char 'a') Down _ _) w = let (x,y) = translation w
+                                                   (_,n,_) = conf w
+                                                   width = fromIntegral n
+                                                in w {translation = (x - drawScale w * width*0.1, y)}
+handleInput (EventKey (Char 'd') Down _ _) w = let (x,y) = translation w
+                                                   (_,n,_) = conf w
+                                                   width = fromIntegral n
+                                                in w {translation = (x + drawScale w * width*0.1, y)}
+handleInput (EventKey (Char 'w') Down _ _) w = let (x,y) = translation w 
+                                                   (_,_,m) = conf w
+                                                   height = fromIntegral m                       
+                                                in w {translation = (x, y + drawScale w * height*0.1)}
+handleInput (EventKey (Char 's') Down _ _) w = let (x,y) = translation w 
+                                                   (_,_,m) = conf w
+                                                   height = fromIntegral m                   
+                                                in w {translation = (x, y - drawScale w * height*0.1)}
+
+-- recenter with c
+handleInput (EventKey (Char 'c') Down _ _) w = w {translation = (0,0)}
+
 handleInput _ w = w
 
 
 
-f :: Int -> RGBA
-f _ = colorToRGBA white
-
-
-initConf :: Int -> Int -> Conf
-initConf n m = let c = [f k | k <- [0..(n*m)-1]]
-                in (SVector.fromListN (n*m) c, n, m)
+-- Initial configuration (all cells default color).
+initConf :: Int -> Int -> RGBA -> Conf
+initConf n m def = let c = [ def | k <- [0..(n*m)-1]]
+                    in (SVector.fromListN (n*m) c, n, m)
 
 -- initial world prior to starting simulation
-initWorld :: Automata -> Frontier -> (Env -> RGBA) -> Int -> Int -> World
-initWorld ca@(CA _ sm nv _ def) fr f n m = World { transition = f,
-                                                   conf = initConf n m,
-                                                   neighbors = computeNeighbors n m nv fr,
-                                                   states = sm,
-                                                   defaultColor = fromJust $ Map.lookup def sm,
-                                                   frontier = fr,
-                                                   paused = True,
-                                                   initial = True,
-                                                   instant = 0,
-                                                   drawScale = 5,
-                                                   speed = 1.0
-                                                 }
+initWorld :: Automata 
+          -> Frontier
+          -> (Env -> RGBA)  -- converted transition rule
+          -> Int            -- number of rows in grid
+          -> Int            -- number of columns in grid
+          -> World
+initWorld ca@(CA _ sm nv _ def) fr f n m = let defcolor = fromJust $ Map.lookup def sm
+                                            in World { transition = f,
+                                                       conf = initConf n m defcolor,
+                                                       neighbors = computeNeighbors n m nv fr,
+                                                       states = sm,
+                                                       defaultColor = defcolor,
+                                                       frontier = fr,
+                                                       paused = True,
+                                                       initial = True,
+                                                       instant = 0,
+                                                       drawScale = 5,
+                                                       translation = (0,0),
+                                                       speed = 1.0
+                                                     }
 
 
 

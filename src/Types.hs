@@ -100,6 +100,7 @@ data World = World {automata :: Automata,
                     initial :: Bool,
                     instant:: Int,
                     drawScale :: Float,
+                    translation :: (Float,Float),
                     speed :: Float
                     }
 

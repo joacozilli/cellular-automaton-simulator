@@ -6,9 +6,10 @@ import                  Graphics.Gloss.Data.Color
 import                  Data.Bits ((.|.), shiftL, shiftR, (.&.))
 import                  GHC.ByteOrder (targetByteOrder, ByteOrder(..))
 import qualified        Data.Vector.Storable as SVector
+import qualified        Data.Vector.Storable.Mutable as MSVector (unsafeNew, unsafeWrite)
 import qualified        Data.ByteString as B
 import qualified        Data.ByteString.Internal as BI (fromForeignPtr)
-
+import                  Control.Monad.ST
 
 -- Pack 4 word8 representing a color in rgba format to a single word32 (RGBA type).
 -- Endianness is considered so byte order is always [r,g,b,a].
@@ -108,23 +109,31 @@ buildByteString v = let v8 :: SVector.Vector Word8
 -- is outside grid.
 mouseToCell :: Int             -- number of rows of grid
             -> Int             -- number of columns of grid
+            -> (Float, Float)  -- world translation
             -> (Float, Float)  -- mouse position in gloss coordinate system
             -> Float           -- drawing scale
             -> Maybe Coord
-mouseToCell n m (x,y) s = let h = fromIntegral n * s
-                              w = fromIntegral m * s
-                              inGrid = x >= (-w/2) && x < (w/2) && y >= (-h/2) && y < (h/2)
-                          in if inGrid
-                             then let (i,j) =  (floor ( h/2 - y - 1), floor (x + w/2))
-                                   in Just (i `div` floor s, j `div` floor s)
-                             else Nothing
+mouseToCell n m (tx,ty) (x,y) s = let h = fromIntegral n * s
+                                      w = fromIntegral m * s
+                                      (xx,yy) = (x - tx, y - ty)
+                                      inGrid = xx >= -w/2 && xx < w/2 && yy >= -h/2 && yy < h/2
+                                  in if inGrid
+                                    then let (i,j) =  (floor ( h/2 - yy - 1), floor (xx + w/2))
+                                          in Just (i `div` floor s, j `div` floor s)
+                                    else Nothing
 
 -- Color cell in grid. Used for mouse event.
 colorCell :: Coord -> RGBA -> Conf -> Conf
-colorCell cell color (confvec,n,m) = let list = SVector.toList confvec
-                                         idx = unidim cell m
-                                     in (SVector.fromListN (n*m) (aux 0 idx color list),n,m)
-            where
-                aux k limit c (x:xs) | k < limit = x : aux (k+1) limit c xs
-                                     | k == limit = c:xs
-                aux _ _ _ [] = undefined
+colorCell c color (confvec,n,m) =
+    let newconf = runST $ do
+                          let len = n*m
+                              idx = unidim c m
+                          new <- MSVector.unsafeNew len
+                          let loop i | i == len = return ()
+                                     | i == idx = do MSVector.unsafeWrite new i color
+                                                     loop (i+1)
+                                     | otherwise = do MSVector.unsafeWrite new i (confvec SVector.! i)
+                                                      loop (i+1)
+                          loop 0
+                          SVector.unsafeFreeze new
+    in (newconf,n,m)

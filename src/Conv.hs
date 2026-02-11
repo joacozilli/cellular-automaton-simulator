@@ -55,7 +55,6 @@ conversion sm n vm (Let x exp rule) = do let vm' = Map.insert x 0 vm
                                                              env' = env {envVars = Map.insert x n (envVars env)}
                                                            in frule env')
 
-
 ----------------------------- auxiliar functions for conversion -----------------------------------------
 
 convState :: States -> Int -> Exp State -> Output [Error] (Env -> RGBA)

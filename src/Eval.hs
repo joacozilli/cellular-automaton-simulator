@@ -44,16 +44,16 @@ globalTransition c@(_,n,m) func neighs fr def =
                         let len = n*m
                         new <- MSVector.unsafeNew len
                         let loop i | i == len = return ()
-                                    | otherwise = do let env = Env { cell = i,
+                                   | otherwise = do let env = Env { cell = i,
                                                                     envConf = c,
                                                                     envNeighbors = neighs,
                                                                     envVars = Map.empty,
                                                                     envFrontier = fr,
                                                                     envDefaultColor = def
                                                                     }
-                                                         x = func env
-                                                     MSVector.unsafeWrite new i x
-                                                     loop (i+1)
+                                                        x = func env
+                                                    MSVector.unsafeWrite new i x
+                                                    loop (i+1)
                         loop 0
                         SVector.unsafeFreeze new
     in (newconf,n,m)
@@ -82,7 +82,6 @@ globalTransitionPAR c@(_,n,m) func neighs fr def =
                                                                             envFrontier = fr,
                                                                             envDefaultColor = def
                                                                             }
-                                                                in func env)
-                        
+                                                                in func env)                     
                         chunksComputed = parMap rdeepseq buildChunks ranges
                     in (SVector.concat chunksComputed, n, m)
