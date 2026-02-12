@@ -18,10 +18,11 @@ legend w = let (_,n,m) = conf w
                s = drawScale w
                width = fromIntegral m * s
                height = fromIntegral n * s
-               boxW = width * 0.1
+               boxW = min (width * 0.1) 70
                boxH = height
-               gentext = translate (width/2) (boxH/2) $ scale 0.1 0.1 $ Text ("gen " ++ show (instant w))
-               rect = translate (width/2 + boxW/2) 0 $ color red $ rectangleSolid boxW boxH
+               gentext = translate (width/2 + 5) (boxH/2 - 20) $ scale 0.1 0.1 $ color (greyN 0.75) (Text (show (instant w)))
+               rect = translate (width/2 + boxW/2) 0 (Pictures [color (dark $ dark red) $ rectangleSolid boxW boxH,
+                                                                rectangleWire boxW boxH])
             in Pictures [rect,gentext]
 
 
@@ -95,19 +96,19 @@ handleInput (EventKey (SpecialKey KeyDown) Down _ _) w = w {drawScale = max (dra
 handleInput (EventKey (Char 'a') Down _ _) w = let (x,y) = translation w
                                                    (_,n,_) = conf w
                                                    width = fromIntegral n
-                                                in w {translation = (x + drawScale w * width*0.1, y)}
+                                                in w {translation = (x + (drawScale w * width*0.1) / drawScale w, y)}
 handleInput (EventKey (Char 'd') Down _ _) w = let (x,y) = translation w
                                                    (_,n,_) = conf w
                                                    width = fromIntegral n
-                                                in w {translation = (x - drawScale w * width*0.1, y)}
+                                                in w {translation = (x - (drawScale w * width*0.1) / drawScale w, y)}
 handleInput (EventKey (Char 'w') Down _ _) w = let (x,y) = translation w 
                                                    (_,_,m) = conf w
                                                    height = fromIntegral m                       
-                                                in w {translation = (x, y - drawScale w * height*0.1)}
+                                                in w {translation = (x, y - (drawScale w * height*0.1) / drawScale w)}
 handleInput (EventKey (Char 's') Down _ _) w = let (x,y) = translation w 
                                                    (_,_,m) = conf w
                                                    height = fromIntegral m                   
-                                                in w {translation = (x, y + drawScale w * height*0.1)}
+                                                in w {translation = (x, y + (drawScale w * height*0.1) / drawScale w)}
 
 -- recenter with c
 handleInput (EventKey (Char 'c') Down _ _) w = w {translation = (0,0)}
