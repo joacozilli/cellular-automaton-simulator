@@ -26,8 +26,6 @@ dependencies:
 - array
 - vector
 - bytestring
-- mtl
-- transformers
 
 default-extensions:
 - GADTs

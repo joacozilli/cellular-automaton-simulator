@@ -14,7 +14,7 @@ import           Control.Monad (liftM, ap)
 
 
 -- monad to be used in conversion; it allows to keep track of all
--- encountered errors troughout the conversion.
+-- encountered errors throughout the conversion.
 newtype Output e a = Out (a,e)
 
 instance Monoid e => Functor (Output e) where
@@ -43,10 +43,10 @@ conversion :: States                -- map of states
             -> Output [Error] (Env -> RGBA)
 conversion sm n _ (State s) = convState sm n s
 
-conversion sm n vm (If b r1 r2) = do prop <- convBool sm n vm b
+conversion sm n vm (If b r1 r2) = do p <- convBool sm n vm b
                                      f1 <- conversion sm n vm r1
                                      f2 <- conversion sm n vm r2
-                                     return (\env -> if prop env then f1 env else f2 env)
+                                     return (\env -> if p env then f1 env else f2 env)
 
 conversion sm n vm (Let x exp rule) = do let vm' = Map.insert x 0 vm
                                          fexp <- convInt sm n vm exp

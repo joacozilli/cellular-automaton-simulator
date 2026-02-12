@@ -43,7 +43,6 @@ data Exp a where
     Neighbors :: Exp State -> Exp Int
     Opp :: Exp Int -> Exp Int
     
-
     -- boolean expressions
     BTrue :: Exp Bool
     BFalse :: Exp Bool

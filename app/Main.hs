@@ -35,8 +35,8 @@ printError (UndefVar name) = putStrLn ("  - undefined variable \""++name++"\" re
 checkRule :: Automata -> IO ()
 checkRule ca@(CA name states neigh rule def) = let n = Vector.length neigh
                                                 in case conversion states n Map.empty rule of
-                                                    Out (res,[]) -> do play disp white 15
-                                                                          (initWorld ca Toroidal res 453 887)
+                                                    Out (res,[]) -> do play disp white 30
+                                                                          (initWorld ca Toroidal res 100 100)
                                                                           draw
                                                                           handleInput
                                                                           update

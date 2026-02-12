@@ -1,0 +1,19 @@
+Automaton mylife {
+
+    States := alive : black | dying : red | old : gray | dead : white
+
+    Neighborhood := (1,0) | (0,1) | (-1,0) | (0,-1) | (1,1) | (-1,-1) | (1,-1) | (-1,1)
+
+    Transition {
+        let x = neighbors(alive) in
+        case {
+            cell == alive : { if x > 4 then dying else if x == 3 then alive else old }
+            cell == old : { dead }
+            cell == dead : { if x == 2 then alive else dead }
+            otherwise : { if x == 1 then alive else dead }
+        }
+
+    }
+    Default := dead
+
+}

@@ -6,7 +6,6 @@ import                  Graphics.Gloss.Data.Color
 import                  Data.Bits ((.|.), shiftL, shiftR, (.&.))
 import                  GHC.ByteOrder (targetByteOrder, ByteOrder(..))
 import qualified        Data.Vector.Storable as SVector
-import qualified        Data.Vector.Storable.Mutable as MSVector (unsafeNew, unsafeWrite)
 import qualified        Data.ByteString as B
 import qualified        Data.ByteString.Internal as BI (fromForeignPtr)
 

@@ -56,10 +56,7 @@ import qualified Data.Vector as Vector
 'neighbors'         { Tneighbors }
 'white'             { Twhite }
 'black'             { Tblack }
-'gray1'             { Tgray1 }
-'gray2'             { Tgray2 }
-'gray3'             { Tgray3 }
-'gray4'             { Tgray4 }
+'gray'              { Tgray }
 'red'               { Tred }
 'lightred'          { Tlightred }
 'blue'              { Tblue }
@@ -156,10 +153,7 @@ Set          :: { [Exp State] }
 Color        :: { RGBA }
              : 'white'                                                 { colorToRGBA white }
              | 'black'                                                 { colorToRGBA black }
-             | 'gray1'                                                 { colorToRGBA (greyN 0.75) }
-             | 'gray2'                                                 { colorToRGBA (greyN 0.55) }
-             | 'gray3'                                                 { colorToRGBA (greyN 0.35) }
-             | 'gray4'                                                 { colorToRGBA (greyN 0.15) }
+             | 'gray'                                                  { colorToRGBA (greyN 0.5) }
              | 'red'                                                   { colorToRGBA red }
              | 'lightred'                                              { colorToRGBA (light $ light $ light red) }
              | 'blue'                                                  { colorToRGBA blue }
@@ -226,7 +220,7 @@ data Token = TCA
              | TFalse | TTrue
              | Teq | Tneq | Tle | Tlesser | Tge | Tgreater
              | Tneighbors
-             | Twhite | Tblack | Tgray1 | Tgray2 | Tgray3 | Tgray4
+             | Twhite | Tblack | Tgray
              | Tred | Tlightred | Tblue | Tlightblue | Tyellow
              | Tdarkyellow | Tgreen | Tdarkgreen | Tcyan
              | Tmagenta | Tazure | Torange | Trose | Tviolet
@@ -267,10 +261,10 @@ lexer cont s = case s of
 
                 where lexNat s = let (n,rest) = span isDigit s
                                   in \c -> cont (Tnat (read n)) rest (c + length n)
-                      lexVar s = let (word,rest) = span isAlpha s
+                      lexVar s = let (word,rest) = span isAlphaNum s
                                   in case Map.lookup word tokens of
                                     Just token -> \c -> cont token rest (c + length word)
-                                    Nothing -> cont (Tid word) rest
+                                    Nothing -> \c -> cont (Tid word) rest (c + length word)
                                     where tokens = Map.fromList [ ("Automaton", TCA)
                                                                 , ("States", TStates)
                                                                 , ("Neighborhood", TNeighborhood)
@@ -293,10 +287,7 @@ lexer cont s = case s of
                                                                 , ("neighbors", Tneighbors)
                                                                 , ("white", Twhite)
                                                                 , ("black", Tblack)
-                                                                , ("gray1", Tgray1)
-                                                                , ("gray2", Tgray2)
-                                                                , ("gray3", Tgray3)
-                                                                , ("gray4", Tgray4)
+                                                                , ("gray", Tgray)
                                                                 , ("red", Tred)
                                                                 , ("lightred", Tlightred)
                                                                 , ("blue", Tblue)
