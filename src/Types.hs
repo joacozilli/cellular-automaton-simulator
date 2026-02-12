@@ -19,15 +19,15 @@ newtype Coord = Coord (Int, Int) deriving Show
 instance Num Coord where
    (Coord (x1, y1)) + (Coord (x2, y2)) = Coord (x1 + x2, y1 + y2)
 
-
 -- neighborhood as it is defined by automata
 type Neighborhood = Vector.Vector Coord
+
 type States = Map.Map State RGBA
 
 -- cellular automata with its name, states, neighborhood, transition rule and default state
 data Automata = CA Name States Neighborhood Rule State  deriving Show
 
-data Rule = If (Exp Bool) Rule Rule | State (Exp State) | Let Name (Exp Int) Rule
+data Rule = State (Exp State) | If (Exp Bool) Rule Rule | Let Name (Exp Int) Rule
 
 deriving instance Show Rule
 
