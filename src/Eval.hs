@@ -3,10 +3,8 @@ module Eval where
 import           Types
 import           Utils
 import qualified Data.Vector as Vector (generate, length, (!))
-import qualified Data.Vector.Storable as SVector (unsafeFreeze, generate, concat)
-import qualified Data.Vector.Storable.Mutable as MSVector (unsafeNew, unsafeWrite)
+import qualified Data.Vector.Storable as SVector (generate, concat)
 import qualified Data.Map.Strict as Map (empty)
-import           Control.Monad.ST
 
 import           Control.Parallel.Strategies
 import           GHC.Conc (numCapabilities)
@@ -32,7 +30,6 @@ computeNeighbors n m v fr = Vector.generate (n*m) $ \k ->
 
 
 -- global transition to go from one configuration to the next, computing each cell sequentially.
--- It creates mutable vector and converts it to inmutable using the ST monad.
 globalTransition :: Conf                -- current configuration
                  -> (Env -> RGBA)       -- converted transition rule
                  -> LitNeighbors        -- literal neighborhood of each cell
@@ -40,25 +37,18 @@ globalTransition :: Conf                -- current configuration
                  -> RGBA                -- default color
                  -> Conf
 globalTransition c@(_,n,m) func neighs fr def =
-    let newconf =  runST $ do
-                        let len = n*m
-                        new <- MSVector.unsafeNew len
-                        let loop i | i == len = return ()
-                                   | otherwise = do let env = Env { cell = i,
-                                                                    envConf = c,
-                                                                    envNeighbors = neighs,
-                                                                    envVars = Map.empty,
-                                                                    envFrontier = fr,
-                                                                    envDefaultColor = def
-                                                                    }
-                                                        x = func env
-                                                    MSVector.unsafeWrite new i x
-                                                    loop (i+1)
-                        loop 0
-                        SVector.unsafeFreeze new
+    let newconf = SVector.generate (n*m) (\i -> let env = Env { cell = i,
+                                                                envConf = c,
+                                                                envNeighbors = neighs,
+                                                                envVars = Map.empty,
+                                                                envFrontier = fr,
+                                                                envDefaultColor = def
+                                                                }
+                                                in func env)
     in (newconf,n,m)
+                         
 
--- The same as globalTransition, but compute cells parallelly
+-- The same as globalTransition, but compute cells in parallel.
 globalTransitionPAR :: Conf
                     -> (Env -> RGBA)
                     -> LitNeighbors
