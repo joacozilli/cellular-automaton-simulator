@@ -77,7 +77,7 @@ convInt _ _ _ (Const n) = return (\_ -> n)
 
 convInt _ _ vm (Var x) = case Map.lookup x vm of
                             Just _ -> return (\env -> fromJust $ Map.lookup x (envVars env) )
-                            Nothing ->  write [UndefVar x] >> return (\_ -> 0)
+                            Nothing -> write [UndefVar x] >> return (\_ -> 0)
 
 convInt sm n _ (Neighbors state) = do f <- convState sm n state
                                       return (\env -> 

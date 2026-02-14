@@ -94,8 +94,7 @@ data World = World {transition :: Env -> RGBA,
                     initial :: Bool,
                     instant:: Int,
                     drawScale :: Float,
-                    translation :: (Float,Float),
-                    speed :: Float
+                    translation :: (Float,Float)
                     }
 
 data Error = UndefState Name | NeighborOutOfRange Int | UndefVar Name

@@ -140,8 +140,7 @@ initWorld (CA _ sm nv _ def) fr f n m = let defcolor = fromJust $ Map.lookup def
                                                       initial = True,
                                                       instant = 0,
                                                       drawScale = 5,
-                                                      translation = (0,0),
-                                                      speed = 1.0
+                                                      translation = (0,0)
                                                    }
 
 
