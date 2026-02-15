@@ -18,13 +18,17 @@ import           Graphics.Gloss.Data.Color
 import           Graphics.Gloss.Interface.Pure.Game
 
 
-
 data Options = Options { optGridRows :: Int,
                          optGridColumns :: Int,
                          optFrontier :: Frontier,
                          optSpeed :: Int,
                          optParallelism :: Bool
                         }
+
+defaultOptions :: Options
+defaultOptions = Options { optGridRows = 100, optGridColumns = 100,
+                           optFrontier = Default, optSpeed = 10, optParallelism = True }
+                    
 
 -- Options descriptions.
 options :: [OptDescr (Either String (Options -> Options))]
@@ -70,19 +74,7 @@ options = [Option ['r'] ["rows"]
             ]
 
 
-
-defaultOptions :: Options
-defaultOptions = Options { optGridRows = 100, optGridColumns = 100,
-                           optFrontier = Default, optSpeed = 10, optParallelism = True }
-
-
--- foldM :: (foldable t, monad m) => (b -> a -> m b) -> b -> t a -> m b
--- foldM :: (Options -> Either String (Options -> Options) -> Either String Options)
---       -> Options
---       -> [Either String (Options -> Options)]
---       -> Either String Options
-
-
+-- Read and prepare options. Exit program if there is an error.
 parseOptions :: [String] -> IO Options
 parseOptions args = case getOpt Permute options args of
                      (_,_,errs) | not (null errs) -> do mapM_ putStrLn errs
@@ -99,38 +91,45 @@ parseOptions args = case getOpt Permute options args of
 
 
 
-displayWindow :: Display
-displayWindow = InWindow "CAsim" (1000,1000) (0,0)
 
  
--- Print error message for given error type in transition rule.
-printTransitionError :: Error -> IO ()
-printTransitionError (UndefState name) = putStrLn ("  - undefined state \""++name++"\"")
-printTransitionError (NeighborOutOfRange k) = putStrLn ("  - trying to access invalid/out of range neighbor with nei("++show k++")")
-printTransitionError (UndefVar name) = putStrLn ("  - undefined variable \""++name++"\"")
+-- Print error message for given error.
+printError :: Error -> IO ()
+printError (UndefState name) = putStrLn ("  - Undefined state \""++name++"\" referenced.")
+printError (NeighborOutOfRange k) = putStrLn ("  - trying to access invalid/out of range neighbor with nei("++show k++")")
+printError (UndefVar name) = putStrLn ("  - undefined variable \""++name++"\" referenced.")
+printError (SameColor ss) = undefined
                                           
-                     
+-- Print all errors, avoiding duplicates.
+printErrors :: [Error] -> IO ()
+printErrors = aux []
+       where
+              aux _ [] = return ()
+              aux xs (e:es) = if e `elem` xs
+                               then aux xs es
+                               else do printError e
+                                       aux (e:xs) es
+
+
 startSimulation :: Automata -> Options -> IO ()
 startSimulation ca@(CA _ states neigh rule def) opts =
        let n = Vector.length neigh
-       in case conversion states n Map.empty rule of
-              Out (_,errors) | not (null errors) -> do putStrLn  "[ERROR] following errors where detected in transition rule:"
-                                                       aux errors
-                                                       exitFailure
-              Out (res,_) -> case Map.lookup def states of
-                                Nothing -> putStrLn ("[ERROR] undefined state \""++def++"\"in Default field")
-                                Just _ -> play displayWindow
-                                               white
-                                               (optSpeed opts)
-                                               (initWorld ca (optFrontier opts) res (optGridRows opts) (optGridColumns opts))
-                                               draw
-                                               handleInput
-                                               update                                          
-       where
-       aux [e] = printTransitionError e
-       aux (e:es) = do printTransitionError e
-                       aux es
-       aux [] = undefined
+           Out (res,errs) = conversion states n Map.empty rule
+           err = case Map.lookup def states of
+                     Nothing -> [UndefState def]
+                     Just _ -> []
+           errors = err ++ errs
+       in if not (null errors) 
+              then do putStrLn "[ERROR] following errors where detected in automata definition:"
+                      printErrors errors
+                      exitFailure
+              else play displayWindow
+                        white
+                        (optSpeed opts)
+                        (initWorld ca (optFrontier opts) res (optGridRows opts) (optGridColumns opts))
+                        draw
+                        handleInput
+                        update
 
 main :: IO ()
 main = do args <- getArgs
@@ -142,3 +141,6 @@ main = do args <- getArgs
                                                     exitFailure
                                    Ok result -> startSimulation result opts
             _ -> return ()
+
+displayWindow :: Display
+displayWindow = InWindow "CAsim" (1000,1000) (0,0)
