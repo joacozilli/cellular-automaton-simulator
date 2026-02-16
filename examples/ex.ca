@@ -1,11 +1,14 @@
 Automaton myCA {
-    States := one : white
-    | two : black
+    States := one : white | two : black | x : red
 
-    Neighborhood := (-1,0)
+    Neighborhood := (-1,0) | (1,0)
 
     Transition {
-        if cell != nei(1) then nei(1) else cell
+        let x = neighbors(one)
+        in case {
+                cell == x && x > 1 : { one }
+                otherwise : { x }
+                }
 
     }
 

@@ -98,7 +98,11 @@ printError :: Error -> IO ()
 printError (UndefState name) = putStrLn ("  - Undefined state \""++name++"\" referenced.")
 printError (NeighborOutOfRange k) = putStrLn ("  - trying to access invalid/out of range neighbor with nei("++show k++")")
 printError (UndefVar name) = putStrLn ("  - undefined variable \""++name++"\" referenced.")
-printError (SameColor ss) = undefined
+printError (SameColor ss) = putStrLn ("  - " ++ aux ss ++ " share same color.")
+                            where
+                                aux [s1,s2] = show s1 ++ " and " ++ show s2
+                                aux (x:xs) = show x ++ ", " ++ aux xs
+                                aux _ = undefined
                                           
 -- Print all errors, avoiding duplicates.
 printErrors :: [Error] -> IO ()
@@ -110,20 +114,35 @@ printErrors = aux []
                                else do printError e
                                        aux (e:xs) es
 
+-- Check for defined states that share color.
+checkStates :: States -> [Error]
+checkStates sm = let xs = Map.toList sm
+                     xs' = map (\(k,v) -> (v,[k])) xs
+                     newmap = Map.fromListWith (++) xs'
+                     shareColors = Map.toList newmap
+                     noSingletons = filter (\(_,l) -> case l of
+                                                        [_] -> False
+                                                        _ -> True) shareColors
+                 in map (\(_,l) -> SameColor l) noSingletons
+
+
+
 
 startSimulation :: Automata -> Options -> IO ()
 startSimulation ca@(CA _ states neigh rule def) opts =
        let n = Vector.length neigh
-           Out (res,errs) = conversion states n Map.empty rule
+           Out (res,errs1) = conversion states n Map.empty rule
+           errs2 = checkStates states
            err = case Map.lookup def states of
                      Nothing -> [UndefState def]
                      Just _ -> []
-           errors = err ++ errs
+           errors = err ++ errs2 ++ errs1
        in if not (null errors) 
               then do putStrLn "[ERROR] following errors where detected in automata definition:"
                       printErrors errors
                       exitFailure
-              else play displayWindow
+              else do print rule
+                      play displayWindow
                         white
                         (optSpeed opts)
                         (initWorld ca (optFrontier opts) res (optGridRows opts) (optGridColumns opts))
