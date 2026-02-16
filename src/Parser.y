@@ -197,7 +197,7 @@ catchP p f = \s c l -> case p s c l of
                         Failed err -> f err s c l
 
 happyError :: P a
-happyError = \s c l -> Failed $ "parse error in line "++(show l) ++ ", column "++(show c)++" ("++ (take 30 s)++"...)"
+happyError = \s c l -> Failed $ "parse error at line "++(show l) ++ ", column "++(show c)++" ("++ (take 30 s)++"...)"
 
 
 data Token = TCA
@@ -244,7 +244,9 @@ lexer cont s = case s of
                 ('>':'=':cs) -> \c -> cont Tge cs (c+2)
                 (c:cs) -> case Map.lookup c symbTokens of
                             Just token -> \c -> cont token cs (c+1)
-                            Nothing -> undefined
+                            Nothing -> \c l -> (failP $
+                                             "parse error: unknown character at line "++ show l ++ ", column "++ show c)
+                                             "" c l
                      where symbTokens = Map.fromList [ ('{',TOCB)
                                                      , ('}', TCCB)
                                                      , ('(', TOP)
