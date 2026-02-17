@@ -97,4 +97,10 @@ data World = World {transition :: Env -> RGBA,
                     translation :: (Float,Float)
                     }
 
-data Error = UndefState Name | NeighborOutOfRange Int | UndefVar Name | SameColor [State] deriving Eq
+data Error = UndefState Name
+           | NeighborOutOfRange Int
+           | UndefVar Name
+           | SameColor [State]
+           | IllegalVarName String
+
+deriving instance Eq Error

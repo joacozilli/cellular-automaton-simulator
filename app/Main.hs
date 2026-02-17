@@ -103,6 +103,7 @@ printError (SameColor ss) = putStrLn ("  - " ++ aux ss ++ " share same color.")
                                 aux [s1,s2] = show s1 ++ " and " ++ show s2
                                 aux (x:xs) = show x ++ ", " ++ aux xs
                                 aux _ = undefined
+
                                           
 -- Print all errors, avoiding duplicates.
 printErrors :: [Error] -> IO ()

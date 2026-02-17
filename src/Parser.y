@@ -71,6 +71,7 @@ import qualified Data.Vector as Vector
 'orange'            { Torange }
 'rose'              { Trose }
 'violet'            { Tviolet }
+'#'                 { Thash }
 IDENT               { Tid $$ }
 NAT                 { Tnat $$ }
 
@@ -117,7 +118,7 @@ Cond         : 'otherwise' ':' '{' Rule '}'                            { $4 }
 
 
 StateExp     :: { Exp State }
-             : IDENT                                                   { Lit $1 }
+             : '#' IDENT                                               { Lit $2 }
              | 'cell'                                                  { Self }
              | 'nei' '(' NAT ')'                                       { Neighbor $3 }
 
@@ -193,7 +194,7 @@ failP err = \s c l -> Failed err
 
 catchP :: P a -> (String -> P a) -> P a
 catchP p f = \s c l -> case p s c l of
-                        Ok x     -> Ok x
+                        Ok x -> Ok x
                         Failed err -> f err s c l
 
 happyError :: P a
@@ -224,6 +225,7 @@ data Token = TCA
              | Tred | Tlightred | Tblue | Tlightblue | Tyellow
              | Tdarkyellow | Tgreen | Tdarkgreen | Tcyan
              | Tmagenta | Tazure | Torange | Trose | Tviolet
+             | Thash
              | Tid String
              | Tnat Int
              | TEOF
@@ -259,7 +261,8 @@ lexer cont s = case s of
                                                      , ('-', Tminus)
                                                      , ('<', Tlesser)
                                                      , ('>', Tgreater)
-                                                     , ('=', Tassign) ]
+                                                     , ('=', Tassign)
+                                                     , ('#', Thash) ]
 
                 where lexNat s = let (n,rest) = span isDigit s
                                   in \c -> cont (Tnat (read n)) rest (c + length n)
