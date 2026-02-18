@@ -1,12 +1,13 @@
 Automaton myCA {
-    States := one : white | two : black | three : red
+    States := one : white | two : white
 
-    Neighborhood := (-1,0) | (1,0)
+    Neighborhood := (1,0) | (0,2) | (0,1)
 
     Transition {
+        let one = 12
+        in
             case {
-                #one == cell : { #two }
-                #one == #three : { #three }
+                cell == nei(2) and #one in [#one] and #one == #one : { #one }
                 otherwise : { #one }
                 }
 

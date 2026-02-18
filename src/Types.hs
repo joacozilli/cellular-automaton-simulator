@@ -18,6 +18,11 @@ newtype Coord = Coord (Int, Int) deriving Show
 
 instance Num Coord where
    (Coord (x1, y1)) + (Coord (x2, y2)) = Coord (x1 + x2, y1 + y2)
+   (-) = undefined
+   (*) = undefined
+   abs = undefined
+   signum = undefined
+   fromInteger = undefined
 
 -- neighborhood as it is defined by automata
 type Neighborhood = Vector.Vector Coord
@@ -101,6 +106,5 @@ data Error = UndefState Name
            | NeighborOutOfRange Int
            | UndefVar Name
            | SameColor [State]
-           | IllegalVarName String
 
 deriving instance Eq Error

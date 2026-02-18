@@ -1,12 +1,9 @@
 module Conv where
 
-{-# HLINT ingore "use const" #-}
-
 import           Types
 import           Utils
 import qualified Data.Map.Strict as Map (insert, lookup)
 import qualified Data.Vector as Vector (foldl', (!))
-import qualified Data.Vector.Storable as SVector
 import           Data.Maybe (fromJust)
 
 import           Control.Applicative()
@@ -48,36 +45,36 @@ conversion sm n vm (If b r1 r2) = do p <- convBool sm n vm b
                                      f2 <- conversion sm n vm r2
                                      return (\env -> if p env then f1 env else f2 env)
 
-conversion sm n vm (Let x exp rule) = do let vm' = Map.insert x 0 vm
-                                         fexp <- convInt sm n vm exp
-                                         frule <- conversion sm n vm' rule
-                                         return (\env -> let n = fexp env
-                                                             env' = env {envVars = Map.insert x n (envVars env)}
+conversion sm n vm (Let x expr rule) = do let vm' = Map.insert x 0 vm
+                                          fexpr <- convInt sm n vm expr
+                                          frule <- conversion sm n vm' rule
+                                          return (\env -> let val = fexpr env
+                                                              env' = env {envVars = Map.insert x val (envVars env)}
                                                            in frule env')
 
 ----------------------------- auxiliar functions for conversion -----------------------------------------
 
 convState :: States -> Int -> Exp State -> Output [Error] (Env -> RGBA)
 convState sm _ (Lit name) = case Map.lookup name sm of
-                                Just rgba -> return (\_ -> rgba)
-                                Nothing -> write [UndefState name] >> return (\_ -> 0)
+                                Just rgba -> return (const rgba)
+                                Nothing -> write [UndefState name] >> return (const 0)
 
-convState _ n t@(Neighbor k) = if k <= n
-                                    then return (\env ->
-                                            let i = cell env
-                                                nei = envNeighbors env Vector.! i Vector.! (k-1)
-                                            in cellColor (envConf env) nei (envDefaultColor env))
-                                    else write [NeighborOutOfRange k] >> return (\_ -> 0)
+convState _ n (Neighbor k) = if k <= n
+                                then return (\env ->
+                                        let i = cell env
+                                            nei = envNeighbors env Vector.! i Vector.! (k-1)
+                                        in cellColor (envConf env) nei (envDefaultColor env))
+                                else write [NeighborOutOfRange k] >> return (const 0)
 
-convState _ _ self = return (\env -> cellColor (envConf env) (cell env) (envDefaultColor env))
+convState _ _ Self = return (\env -> cellColor (envConf env) (cell env) (envDefaultColor env))
 
 
 convInt :: States -> Int -> Vars -> Exp Int -> Output [Error] (Env -> Int)
-convInt _ _ _ (Const n) = return (\_ -> n)
+convInt _ _ _ (Const n) = return (const n)
 
 convInt _ _ vm (Var x) = case Map.lookup x vm of
-                            Just _ -> return (\env -> fromJust $ Map.lookup x (envVars env) )
-                            Nothing -> write [UndefVar x] >> return (\_ -> 0)
+                            Just _ -> return (fromJust . Map.lookup x . envVars)
+                            Nothing -> write [UndefVar x] >> return (const 0)
 
 convInt sm n _ (Neighbors state) = do f <- convState sm n state
                                       return (\env -> 
@@ -94,12 +91,18 @@ convInt sm n vm (Opp a) = do f <- convInt sm n vm a
 
 
 convBool :: States -> Int -> Vars -> Exp Bool -> Output [Error] (Env -> Bool)
+convBool _ _ _ BTrue = return (const True)
+convBool _ _ _ BFalse = return (const False)
+
 convBool sm n vm (And a b) = do fa <- convBool sm n vm a
                                 fb <- convBool sm n vm b
                                 return (\env -> fa env && fb env)
 convBool sm n vm (Or a b) = do fa <- convBool sm n vm a
                                fb <- convBool sm n vm b
                                return (\env -> fa env || fb env)
+
+convBool sm n vm (Not a) = do f <- convBool sm n vm a
+                              return (not . f)
 
 convBool sm n vm (Lt a b) = do fa <- convInt sm n vm a
                                fb <- convInt sm n vm b

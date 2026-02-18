@@ -3,7 +3,7 @@ module Utils where
 import                  Types
 import                  Data.Word (Word8)
 import                  Graphics.Gloss.Data.Color
-import                  Data.Bits ((.|.), shiftL, shiftR, (.&.))
+import                  Data.Bits ((.|.), shiftL)
 import                  GHC.ByteOrder (targetByteOrder, ByteOrder(..))
 import qualified        Data.Vector.Storable as SVector
 import qualified        Data.ByteString as B
@@ -27,26 +27,6 @@ colorToRGBA :: Color -> RGBA
 colorToRGBA c = let (r,g,b,a) = rgbaOfColor c
                 in packToRGBA (f r) (f g) (f b) (f a)
                     where f = floor . (*255)
-
-
-
--- Convert RGBA to gloss color.
-rgbaToColor :: RGBA -> Color
-rgbaToColor rgba =
-  let f = (/255) . fromIntegral
-  in case targetByteOrder of
-       LittleEndian ->
-         let r = f (rgba .&. 0xFF)
-             g = f (shiftR rgba 8 .&. 0xFF)
-             b = f (shiftR rgba 16 .&. 0xFF)
-             a = f (shiftR rgba 24 .&. 0xFF)
-         in makeColor r g b a
-       BigEndian ->
-         let a = f (rgba .&. 0xFF)
-             b = f (shiftR rgba 8 .&. 0xFF)
-             g = f (shiftR rgba 16 .&. 0xFF)
-             r = f (shiftR rgba 24 .&. 0xFF)
-         in makeColor r g b a
 
 
 -- Convert coordinate to unidimensional representation.

@@ -54,7 +54,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - CAsim
-    build-tools:
+    build-tool-depends:
     - happy
 
 tests:
