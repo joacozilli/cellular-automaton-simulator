@@ -13,17 +13,17 @@ import                  Data.Maybe
 
 
 
-legend :: World -> Picture
-legend w = let (_,n,m) = conf w
-               s = drawScale w
-               width = fromIntegral m * s
-               height = fromIntegral n * s
-               boxW = max (width * 0.1) 70
-               boxH = height
-               gentext = translate (width/2 + 5) (boxH/2 - 20) $ scale 0.1 0.1 $ color (greyN 0.75) (Text (show (instant w)))
-               rect = translate (width/2 + boxW/2) 0 (Pictures [color (dark $ dark red) $ rectangleSolid boxW boxH,
+sideBar :: World -> Picture
+sideBar w = let (_,n,m) = conf w
+                s = drawScale w
+                width = fromIntegral m * s
+                height = fromIntegral n * s
+                boxW = max (width * 0.1) 70
+                boxH = height
+                gentext = translate (width/2 + 5) (boxH/2 - 20) $ scale 0.1 0.1 $ color (greyN 0.75) (Text (show (instant w)))
+                rect = translate (width/2 + boxW/2) 0 (Pictures [color (dark $ dark red) $ rectangleSolid boxW boxH,
                                                                 rectangleWire boxW boxH])
-            in Pictures [rect,gentext]
+             in Pictures [rect,gentext]
 
 
 gridLines :: Int        -- number of rows in grid
@@ -47,7 +47,7 @@ draw w = let (_,n,m) = conf w
              s = drawScale w
              grid = Pictures (scale s s (drawAux w) : gridLines n m s)
              (x,y) = translation w
-          in Translate x y (Pictures [grid, legend w])
+          in Translate x y (Pictures [grid, sideBar w])
 
 
 -- Update to next world.

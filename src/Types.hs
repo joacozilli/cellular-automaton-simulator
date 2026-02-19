@@ -89,18 +89,18 @@ data Frontier = Default  -- neighbors outside grid range are considered of defau
               | Toroidal -- grid is considered a toroid
 
 -- world type for play
-data World = World {transition :: Env -> RGBA,
-                    conf :: Conf,
-                    neighbors :: LitNeighbors,
-                    colors :: [RGBA],
-                    defaultColor :: RGBA,
-                    frontier :: Frontier,
-                    paused :: Bool,
-                    initial :: Bool,
-                    instant:: Int,
-                    drawScale :: Float,
-                    translation :: (Float,Float),
-                    par :: Bool
+data World = World {transition :: Env -> RGBA,        -- converted transition rule
+                    conf :: Conf,                     -- actual configuration
+                    neighbors :: LitNeighbors,        -- literal neighborhood of each cell
+                    colors :: [RGBA],                 -- list of all colors
+                    defaultColor :: RGBA,             -- default color
+                    frontier :: Frontier,             -- type of frontier in simulation
+                    paused :: Bool,                   -- flag for paused state
+                    initial :: Bool,                  -- flag for being the initial world
+                    instant:: Int,                    -- actual instant
+                    drawScale :: Float,               -- draw scale 
+                    translation :: (Float,Float),     -- final picture translation
+                    par :: Bool                       -- flag for parallel global transition
                     }
 
 data Error = UndefState Name
