@@ -54,7 +54,9 @@ draw w = let (_,n,m) = conf w
 update :: Float -> World -> World
 update _ w = if paused w
               then w
-              else let newconf = globalTransitionPAR (conf w) (transition w) (neighbors w) (frontier w) (defaultColor w)
+              else let newconf = if par w
+                                    then globalTransitionPAR (conf w) (transition w) (neighbors w) (frontier w) (defaultColor w)
+                                    else globalTransitionSEQ (conf w) (transition w) (neighbors w) (frontier w) (defaultColor w)
                     in  w {conf = newconf, instant = instant w + 1, initial = False}
 
 
@@ -128,8 +130,9 @@ initWorld :: Automata
           -> (Env -> RGBA)  -- converted transition rule
           -> Int            -- number of rows in grid
           -> Int            -- number of columns in grid
+          -> Bool           -- world's par flag
           -> World
-initWorld (CA _ sm nv _ def) fr f n m = let defcolor = fromJust $ Map.lookup def sm
+initWorld (CA _ sm nv _ def) fr f n m b = let defcolor = fromJust $ Map.lookup def sm
                                           in World { transition = f,
                                                       conf = initConf n m defcolor,
                                                       neighbors = computeNeighbors n m nv fr,
@@ -140,7 +143,8 @@ initWorld (CA _ sm nv _ def) fr f n m = let defcolor = fromJust $ Map.lookup def
                                                       initial = True,
                                                       instant = 0,
                                                       drawScale = 5,
-                                                      translation = (0,0)
+                                                      translation = (0,0),
+                                                      par = b
                                                    }
 
 

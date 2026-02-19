@@ -147,7 +147,7 @@ startSimulation ca@(CA name states neigh rule def) opts =
                         (displayWindow name)
                         white
                         (optSpeed opts)
-                        (initWorld ca (optFrontier opts) res (optGridRows opts) (optGridColumns opts))
+                        (initWorld ca (optFrontier opts) res (optGridRows opts) (optGridColumns opts)  (optParallelism opts))
                         draw
                         handleInput
                         update

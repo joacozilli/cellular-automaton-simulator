@@ -99,7 +99,8 @@ data World = World {transition :: Env -> RGBA,
                     initial :: Bool,
                     instant:: Int,
                     drawScale :: Float,
-                    translation :: (Float,Float)
+                    translation :: (Float,Float),
+                    par :: Bool
                     }
 
 data Error = UndefState Name

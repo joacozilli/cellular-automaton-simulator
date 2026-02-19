@@ -30,13 +30,13 @@ computeNeighbors n m v fr = Vector.generate (n*m) $ \k ->
 
 
 -- global transition to go from one configuration to the next, computing each cell sequentially.
-globalTransition :: Conf                -- current configuration
-                 -> (Env -> RGBA)       -- converted transition rule
-                 -> LitNeighbors        -- literal neighborhood of each cell
-                 -> Frontier            -- type of frontier in simulation
-                 -> RGBA                -- default color
-                 -> Conf
-globalTransition c@(_,n,m) func neighs fr def =
+globalTransitionSEQ :: Conf                -- current configuration
+                    -> (Env -> RGBA)       -- converted transition rule
+                    -> LitNeighbors        -- literal neighborhood of each cell
+                    -> Frontier            -- type of frontier in simulation
+                    -> RGBA                -- default color
+                    -> Conf
+globalTransitionSEQ c@(_,n,m) func neighs fr def =
     let newconf = SVector.generate (n*m) (\i -> let env = Env { cell = i,
                                                                 envConf = c,
                                                                 envNeighbors = neighs,
