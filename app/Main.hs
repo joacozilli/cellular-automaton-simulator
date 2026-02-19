@@ -143,14 +143,13 @@ startSimulation ca@(CA name states neigh rule def) opts =
               then do putStrLn "[ERROR] following errors where detected in automata definition:"
                       printErrors errors
                       exitFailure
-              else do play
-                        (displayWindow name)
-                        white
-                        (optSpeed opts)
-                        (initWorld ca (optFrontier opts) res (optGridRows opts) (optGridColumns opts)  (optParallelism opts))
-                        draw
-                        handleInput
-                        update
+              else do play (displayWindow name)
+                           white
+                           (optSpeed opts)
+                           (initWorld ca (optFrontier opts) res (optGridRows opts) (optGridColumns opts)  (optParallelism opts))
+                           draw
+                           handleInput
+                           update
 
 main :: IO ()
 main = do args <- getArgs
