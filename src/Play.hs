@@ -98,19 +98,19 @@ handleInput (EventKey (SpecialKey KeyDown) Down _ _) w = w {drawScale = max (dra
 handleInput (EventKey (Char 'a') Down _ _) w = let (x,y) = translation w
                                                    (_,n,_) = conf w
                                                    width = fromIntegral n
-                                                in w {translation = (x + (drawScale w * width*0.1) / drawScale w, y)}
+                                                in w {translation = (x + max (drawScale w * width*0.1) 100 / drawScale w, y)}
 handleInput (EventKey (Char 'd') Down _ _) w = let (x,y) = translation w
                                                    (_,n,_) = conf w
                                                    width = fromIntegral n
-                                                in w {translation = (x - (drawScale w * width*0.1) / drawScale w, y)}
+                                                in w {translation = (x - max (drawScale w * width*0.1) 100 / drawScale w, y)}
 handleInput (EventKey (Char 'w') Down _ _) w = let (x,y) = translation w 
                                                    (_,_,m) = conf w
                                                    height = fromIntegral m                       
-                                                in w {translation = (x, y - (drawScale w * height*0.1) / drawScale w)}
+                                                in w {translation = (x, y - max (drawScale w * height*0.1) 100 / drawScale w)}
 handleInput (EventKey (Char 's') Down _ _) w = let (x,y) = translation w 
                                                    (_,_,m) = conf w
                                                    height = fromIntegral m                   
-                                                in w {translation = (x, y + (drawScale w * height*0.1) / drawScale w)}
+                                                in w {translation = (x, y + max (drawScale w * height*0.1) 100 / drawScale w)}
 
 -- recenter with c
 handleInput (EventKey (Char 'c') Down _ _) w = w {translation = (0,0)}
