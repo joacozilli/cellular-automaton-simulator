@@ -31,8 +31,8 @@ write err = Out ((),err)
 
 
 -- Convert rule AST to a pure haskell function of type Env -> RGBA. Also check for
--- undefined state, neighbor and variable errors. The conversion is successful if
--- no errors are encountered.
+-- undefined state, neighbor and variable errors and states with same color.
+-- The conversion is successful if no errors are encountered.
 conversion :: States                -- map of states
             -> Int                  -- size of neighborhood
             -> Vars                 -- map of variables

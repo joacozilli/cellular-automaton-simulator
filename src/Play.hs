@@ -18,7 +18,7 @@ legend w = let (_,n,m) = conf w
                s = drawScale w
                width = fromIntegral m * s
                height = fromIntegral n * s
-               boxW = min (width * 0.1) 70
+               boxW = max (width * 0.1) 70
                boxH = height
                gentext = translate (width/2 + 5) (boxH/2 - 20) $ scale 0.1 0.1 $ color (greyN 0.75) (Text (show (instant w)))
                rect = translate (width/2 + boxW/2) 0 (Pictures [color (dark $ dark red) $ rectangleSolid boxW boxH,

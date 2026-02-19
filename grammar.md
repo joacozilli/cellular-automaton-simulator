@@ -1,29 +1,19 @@
 # Gramatica concreta
-CA -> 'Automaton' IDENT '{' SPECS '}'
+CA -> 'Automaton' IDENT '{' 'States' ':=' STATES 'Neighborhood' ':=' NEIGHBORHOOD  'Transition' '{' RULE '}' 'Default' ':=' IDENT '}'
 
-SPECS -> 'States' ':=' STATES 'Neighborhood' ':=' NEIGHBORHOOD  'Transition' '{' RULE '}' 'Default' ':=' IDENT
-
-# ------------------------- estados ------------------------------
 STATES -> STATE | STATE '|' STATES
 STATE -> IDENT ':' COLOR
 COLOR -> 'white' | 'black' | ...
-# ----------------------------------------------------------------
 
-# ------------------------- vecindad -----------------------------
 NEIGHBORHOOD -> LITCOORD | LITCOORD '|' NEIGHBORHOOD
 LITCOORD -> '(' INT ',' INT ')'
-# ----------------------------------------------------------------
 
-# -------------------- funcion de transicion ---------------------
-RULE -> STATEEXP | 'if' BOOLEXP 'then' RULE 'else' RULE | 'case' '{' COND '}' 
+RULE -> STATEEXP | 'if' BOOLEXP 'then' RULE 'else' RULE | 'case' '{' COND '}' | 'let' IDENT '=' 
 COND -> 'otherwise' ':' '{' RULE '}' | BOOLEXP ':' '{' RULE '}' | BOOLEXP ':' '{' RULE '}' COND
-# ----------------------------------------------------------------
-
 
 STATEEXP -> IDENT | 'cell' | 'nei' '(' NAT ')'
 
-INTEXP -> INT | 'neighbors' '(' STATEEXP ')' | INTEXP '+' INTEXP | INTEXP '-' INTEXP | '-' INTEXP
-            | INTEXP '*' INTEXP | INTEXP '/' INTEXP (division entera)
+INTEXP -> INT | 'neighbors' '(' STATEEXP ')' | '-' INTEXP | IDENT
 
 BOOLEXP -> 'False' | 'True' | BOOLEXP 'and' BOOLEXP | BOOLEXP 'or' BOOLEXP | 'not' BOOLEXP
             | INTEXP '==' INTEXP | INTEXP '<=' INTEXP | INTEXP '<' INTEXP | INTEXP '>=' INTEXP
@@ -32,7 +22,7 @@ BOOLEXP -> 'False' | 'True' | BOOLEXP 'and' BOOLEXP | BOOLEXP 'or' BOOLEXP | 'no
 
 SET -> STATEEXP | STATEEXP ',' SET
 
-IDENT -> string que no empiece con un numero y no tenga caracteres especiales
+IDENT -> letter IDENT | letter
 NAT -> D | NATD
 D -> '0' | ... | '9'
 INT -> NAT | '-'NAT
@@ -108,23 +98,3 @@ STATEEXP -> IDENT | cell | nei(NAT)
 
 INTEXP -> INT | neighbors(STATEEXP) | INTEXP + INTEXP | INTEXP - INTEXP | - INTEXP
             | INTEXP * INTEXP | INTEXP / INTEXP
-
-
-red
-light light light red 
-green
-dark dark green
-blue
-light light light blue
-yellow
-dark dark yellow
-cyan
-magenta
-rose
-violet
-azure
-orange
-greyN 0.75
-greyN 0.55
-greyN 0.35
-greyN 0.15

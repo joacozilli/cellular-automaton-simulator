@@ -34,7 +34,7 @@ defaultOptions = Options { optGridRows = 100, optGridColumns = 100,
 options :: [OptDescr (Either String (Options -> Options))]
 options = [Option ['r'] ["rows"]
                   (ReqArg (\n -> case readMaybe n of
-                                    Just x | x > 0 -> Right (\opts -> opts {optGridRows = x})
+                                    Just x | x > 0 -> Right (\opts -> opts {optGridRows = max 10 (min x 1000)})
                                     Just _ -> Left "rows must be positive integer"
                                     Nothing -> Left $ "invalid rows value: "++n)
                                "INT")
@@ -42,7 +42,7 @@ options = [Option ['r'] ["rows"]
 
            Option ['c'] ["columns"]
                   (ReqArg (\n -> case readMaybe n of
-                                    Just x | x > 0 -> Right (\opts -> opts {optGridColumns = x})
+                                    Just x | x > 0 -> Right (\opts -> opts {optGridColumns = max 10 (min x 1000)})
                                     Just _ -> Left "columns must be positive integer"
                                     Nothing -> Left $ "invalid columns value: "++n)
                                "INT")
@@ -58,7 +58,7 @@ options = [Option ['r'] ["rows"]
  
            Option ['s'] ["speed"]
                   (ReqArg (\s -> case readMaybe s of
-                                  Just x | x > 0 -> Right (\opts -> opts {optSpeed = x})
+                                  Just x | x > 0 -> Right (\opts -> opts {optSpeed = max 1 (min x 30)})
                                   Just _  -> Left "speed must be positive integer"
                                   Nothing -> Left $ "invalid speed value: "++s)
                                 "INT")
@@ -130,7 +130,7 @@ checkStates sm = let xs = Map.toList sm
 
 
 startSimulation :: Automata -> Options -> IO ()
-startSimulation ca@(CA _ states neigh rule def) opts =
+startSimulation ca@(CA name states neigh rule def) opts =
        let n = Vector.length neigh
            Out (res,errs1) = conversion states n Map.empty rule
            errs2 = checkStates states
@@ -143,7 +143,8 @@ startSimulation ca@(CA _ states neigh rule def) opts =
                       printErrors errors
                       exitFailure
               else do print rule
-                      play displayWindow
+                      play
+                        (displayWindow name)
                         white
                         (optSpeed opts)
                         (initWorld ca (optFrontier opts) res (optGridRows opts) (optGridColumns opts))
@@ -162,5 +163,5 @@ main = do args <- getArgs
                                    Ok result -> startSimulation result opts
             _ -> return ()
 
-displayWindow :: Display
-displayWindow = InWindow "CAsim" (1000,1000) (0,0)
+displayWindow :: String -> Display
+displayWindow name = InWindow name (1000,1000) (0,0)

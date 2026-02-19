@@ -76,12 +76,12 @@ IDENT               { Tid $$ }
 NAT                 { Tnat $$ }
 
 %nonassoc 'let'
-%right '-'
 %left 'or'
 %left 'and'
 %nonassoc 'not'
 %nonassoc 'in'
 %nonassoc '==' '!=' '<=' '<' '>=' '>'
+%right '-'
 
 %%
 

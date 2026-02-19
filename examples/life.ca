@@ -5,12 +5,12 @@ Automaton GameOfLife {
     Neighborhood := (1,0) | (0,1) | (-1,0) | (0,-1) | (1,1) | (-1,-1) | (1,-1) | (-1,1)
 
     Transition {
-        let x = neighbors(#alive) in
+        let alive = neighbors(#alive) in
             if #alive == cell
                 then
-                    if x == 3 or x == 2 then #alive else #dead
+                    if alive == 3 or alive == 2 then #alive else #dead
                 else
-                    if x != 3 then #dead else #alive
+                    if alive != 3 then #dead else #alive
     }
 
     Default := dead
