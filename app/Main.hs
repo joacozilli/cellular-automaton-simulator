@@ -82,6 +82,7 @@ parseOptions args = case getOpt Permute options args of
                      (opts,_,_) -> do let result = foldM applyOption defaultOptions opts
                                       case result of
                                           Left err -> do putStrLn $ "Error: " ++ err
+                                                         putStrLn $ usageInfo "usage:" options
                                                          exitFailure
                                           Right finalOpts -> return finalOpts
                             where
