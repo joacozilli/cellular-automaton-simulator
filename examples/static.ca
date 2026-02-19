@@ -1,7 +1,7 @@
 Automaton static {
     States := alive : black | dead : white
 
-    Neighborhood := (1,0) | (0,1) | (-1,0) | (0,-1) | (1,1) | (-1,-1) | (1,-1) | (-1,1)
+    Neighborhood := (0,0)
 
     Transition {
         cell

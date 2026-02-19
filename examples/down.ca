@@ -1,0 +1,18 @@
+Automaton up {
+
+    States := A : black | B : white
+
+    Neighborhood := (0,1)
+
+    Transition {
+        case {
+            cell == #B and nei(1) == #A : { #A }
+            
+        }
+        if cell == #B and nei(1) == #A
+            then #A
+            else #B
+    }
+
+    Default := B
+}

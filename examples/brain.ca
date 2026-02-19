@@ -1,13 +1,13 @@
 Automaton brain {
-    States := alive1 : red | dying : lightred | dead : white
+    States := alive : red | dying : lightred | dead : white
 
     Neighborhood := (1,0) | (0,1) | (-1,0) | (0,-1) | (1,1) | (-1,-1) | (1,-1) | (-1,1)
 
     Transition {
         case {
-            cell == alive : { dying }
-            cell == dying : { dead }
-            otherwise : { if neighbors(alive) == 2 then alive else dead }
+            cell == #alive : { #dying }
+            cell == #dying : { #dead }
+            otherwise : { if neighbors(#alive) == 2 then #alive else #dead }
         }
     }
 

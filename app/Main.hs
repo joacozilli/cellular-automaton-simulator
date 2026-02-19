@@ -143,8 +143,7 @@ startSimulation ca@(CA name states neigh rule def) opts =
               then do putStrLn "[ERROR] following errors where detected in automata definition:"
                       printErrors errors
                       exitFailure
-              else do print rule
-                      play
+              else do play
                         (displayWindow name)
                         white
                         (optSpeed opts)
