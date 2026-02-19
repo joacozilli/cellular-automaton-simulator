@@ -7,7 +7,7 @@ Automaton up {
     Transition {
         case {
             cell == #B and nei(1) == #A : { #A }
-            cell == #A and ne(1) == #A : { #A }
+            cell == #A and nei(1) == #A : { #A }
             otherwise : { #B }
             }
     }
