@@ -97,8 +97,8 @@ data World = World {transition :: Env -> RGBA,        -- converted transition ru
                     frontier :: Frontier,             -- type of frontier in simulation
                     paused :: Bool,                   -- flag for paused state
                     initial :: Bool,                  -- flag for being the initial world
-                    instant:: Int,                    -- actual instant
-                    drawScale :: Float,               -- draw scale 
+                    instant:: Int,                    -- current instant
+                    drawScale :: Float,               -- draw scale for drawing
                     translation :: (Float,Float),     -- final picture translation
                     par :: Bool                       -- flag for parallel global transition
                     }
