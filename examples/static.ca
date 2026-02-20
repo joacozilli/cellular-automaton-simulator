@@ -1,5 +1,5 @@
 Automaton static {
-    States := alive : black | dead : white
+    States := state1 : black | state2 : white | state3 : darkyellow | state4 : rose
 
     Neighborhood := (0,0)
 
@@ -7,5 +7,5 @@ Automaton static {
         cell
     }
     
-    Default := dead
+    Default := state2
 }

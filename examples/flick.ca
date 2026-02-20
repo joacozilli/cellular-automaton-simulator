@@ -1,11 +1,11 @@
 Automaton flick {
-    States := dead : red | alive : blue
+    States := on : blue | off : gray
 
     Neighborhood := (0,0)
 
     Transition {
-        if cell == dead then alive else dead
+        if cell == #on then #off else #on
     }
 
-    Default := dead
+    Default := off
 }

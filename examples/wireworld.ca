@@ -1,0 +1,25 @@
+Automaton wireworld {
+
+    States := empty : gray | head : blue | tail : red | conductor : yellow
+
+    Neighborhood := (1,0) | (0,1) | (-1,0) | (0,-1) | (1,1) | (-1,-1) | (1,-1) | (-1,1)
+
+    Transition {
+
+        case {
+            cell == #head : { #tail }
+            cell == #tail : { #conductor }
+            cell == #conductor : { let x = neighbors(#head) 
+                                    in if x == 1 or x == 2
+                                        then #head
+                                        else #conductor }
+            
+            otherwise : { #empty }
+        
+            }
+
+    }
+
+    Default := empty
+
+}
