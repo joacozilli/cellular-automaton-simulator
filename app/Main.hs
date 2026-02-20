@@ -162,5 +162,7 @@ main = do args <- getArgs
                                    Ok result -> startSimulation result opts
             _ -> return ()
 
+
+-- display window fo play function
 displayWindow :: String -> Display
 displayWindow name = InWindow name (1000,1000) (0,0)
