@@ -60,7 +60,7 @@ update _ w = if paused w
                     in  w {conf = newconf, instant = instant w + 1, initial = False}
 
 
-
+-- handle keyboard/mouse events
 handleInput :: Event -> World -> World
 -- pause simulation with spacebar
 handleInput (EventKey (SpecialKey KeySpace) Down _ _) w = w {paused = not (paused w)}
